@@ -90,7 +90,7 @@ export default function Page() {
   useEffect(() => {
     if (isSignedIn) {
       console.log("User is signed in:", user);
-      router.push("/screens/screen");
+      router.push("/component/UseAuthExample");
     } else {
       console.log("User is not signed in");
     }
