@@ -107,12 +107,13 @@ const SmartGoalsScreen = () => {
             style={styles.progressBarGoal}
           />
         </View>
-      </ScrollView>
+      
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity style={styles.fab}  onPress={() => router.push("/goal/createGoal")}>
         <Text style={styles.fabIcon}>＋</Text>
       </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };

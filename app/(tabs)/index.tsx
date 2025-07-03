@@ -4,21 +4,120 @@ import {
   View,
   TouchableOpacity,
   Image,
-  ScrollView,
   Dimensions,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
+import { getAuthToken } from "@/utils/authToken";
+import { base_url } from "@/config/url";
+import { useIsFocused } from "@react-navigation/native";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+const wp = (percentage: any) => (width * percentage) / 100;
+const hp = (percentage: any) => (height * percentage) / 100;
+
+const GoalCard = ({ goal }: any) => (
+<View style={styles.Card}>
+    <View style={styles.goalCard}>
+    <View style={styles.goalHeader}>
+      {goal.goalImage?.endsWith(".jpg") ? (
+        <Image
+          source={{ uri: `${base_url}/images/${goal.goalImage}` }}
+          style={{ width: 24, height: 24, marginRight: 8 }}
+        />
+      ) : (
+        <Text style={styles.goalEmoji}>{goal.goalImage || "🎯"}</Text>
+      )}
+      <Text style={styles.goalTitle}>{goal.goalName || "Untitled Goal"}</Text>
+    </View>
+    <Text style={styles.goalTarget}>
+      Target: £{(goal.goalAmount ?? 0).toFixed(2)}
+    </Text>
+    <Text style={styles.goalStat}>
+      Saved: £{(goal.savedAmount ?? 0).toFixed(2)}
+    </Text>
+    <Text style={styles.goalStat}>
+      Progress:{" "}
+      {goal.goalAmount
+        ? Math.round(((goal.savedAmount ?? 0) / goal.goalAmount) * 100)
+        : 0}
+      %
+    </Text>
+    <View style={styles.progressBarContainer}>
+      <View
+        style={[
+          styles.progressBar,
+          {
+            width: `${
+              goal.goalAmount
+                ? Math.min(((goal.savedAmount ?? 0) / goal.goalAmount) * 100, 100)
+                : 0
+            }%`,
+            backgroundColor: "#FB923C",
+          },
+        ]}
+      />
+    </View>
+  </View>
+</View>
+);
 
 export default function Index() {
   const router = useRouter();
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
+  const endpoint = "/goals/user";
 
-  return (
-    <SafeAreaView style={styles.safeContainer}>
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        setLoading(true);
+        const token = await getAuthToken("user");
+        if (!token) {
+          console.warn("User not found in storage");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`${base_url}${endpoint}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+        console.log("Parsed response data:", data);
+
+        if (response?.status === 201 && Array.isArray(data?.data?.data)) {
+          const activeGoals = data.data.data.filter(
+            (goal: any) => goal.status === "active"
+          );
+          setGoals(activeGoals);
+        } else {
+          console.log("No valid goals data");
+          setGoals([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching goals:", error.message);
+        setGoals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isFocused) fetchGoals();
+  }, [isFocused]);
+
+  const renderHeader = () => (
+    <>
+      {/* Header */}
       <View style={styles.container}>
         <View style={styles.headerLeft}>
           <Image
@@ -40,130 +139,126 @@ export default function Index() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => router.push("/profile/profile")}>
+            onPress={() => router.push("/profile/profile")}
+          >
             <MaterialIcons name="account-circle" size={24} color="black" />
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView style={styles.scrollContainer}>
+
+      <View style={styles.Card}>
         {/* Savings Card */}
-        <View style={styles.savingsCard}>
-          <View style={styles.savingsRow}>
-            <View>
-              <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
-              <Text style={styles.cardAmount}>£13.00</Text>
-              <Text style={styles.cardQuote}>
-                “Your habits are creating financial freedom.”
-              </Text>
-            </View>
-            <Text style={styles.streak}>🔥 3 Days</Text>
+      <View style={styles.savingsCard}>
+        <View style={styles.savingsRow}>
+          <View>
+            <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
+            <Text style={styles.cardAmount}>£13.00</Text>
+            <Text style={styles.cardQuote}>
+              “Your habits are creating financial freedom.”
+            </Text>
           </View>
-
-          {/* Habit Icons */}
-          <View style={styles.habitRow}>
-            {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, idx) => (
-              <Text key={idx} style={{ fontSize: 18 }}>
-                {circle}
-              </Text>
-            ))}
-          </View>
+          <Text style={styles.streak}>🔥 3 Days</Text>
         </View>
+        <View style={styles.habitRow}>
+          {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, idx) => (
+            <Text key={idx} style={{ fontSize: 18 }}>
+              {circle}
+            </Text>
+          ))}
+        </View>
+      </View>
 
-        {/* Active Goals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Goals</Text>
+      {/* Active Goals Title */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Your Active Goals</Text>
+        </View>
+      </View>
+      </View>
+    </>
+  );
+
+  const renderFooter = () => (
+    <>
+<View style={styles.Card}>
+        {/* Challenges Section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Active Challenges</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/dashboard/activeChallenges")}
+          >
             <Text style={styles.seeAll}>See All</Text>
-          </View>
-
-          <View style={styles.goalsRow}>
-            {[
-              {
-                title: "Spain Trip",
-                daysLeft: 47,
-                saved: "£200",
-                target: "£400",
-              },
-              {
-                title: "Medical Emergency",
-                daysLeft: 32,
-                saved: "£300",
-                target: "£600",
-              },
-            ].map((goal, idx) => (
-              <View key={idx} style={styles.goalCard}>
-                <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalDetail}>
-                  Days Left: <Text style={styles.bold}>{goal.daysLeft}</Text>
-                </Text>
-                <Text style={styles.goalDetail}>
-                  Saved: <Text style={styles.bold}>{goal.saved}</Text>
-                </Text>
-                <Text style={styles.goalDetail}>
-                  Target: <Text style={styles.bold}>{goal.target}</Text>
-                </Text>
-              </View>
-            ))}
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Active Challenges */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Challenges</Text>
-            <TouchableOpacity
-              onPress={() => router.push("/dashboard/activeChallenges")}
-            >
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.challengeRow}>
-            {[
-              {
-                title: "🥗 No takeout Week",
-                desc: "Ditch delivery for a week and save more.",
-                progress: "3/5",
-                save: "£40",
-              },
-              {
-                title: "📉 No takeout Week",
-                desc: "Track daily habits & hit your goal.",
-                progress: "2/5",
-                save: "£20",
-              },
-            ].map((item, idx) => (
-              <View key={idx} style={styles.challengeCard}>
-                <Text style={styles.challengeTitle}>{item.title}</Text>
-                <Text style={styles.challengeDesc}>{item.desc}</Text>
-                <Text style={styles.challengeProgress}>
-                  {item.progress} • Save: {item.save}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Your Impact */}
-        <View style={styles.impactCard}>
-          <View style={styles.impactTop}>
-            <View>
-              <Text style={styles.impactAmount}>£1,605</Text>
-              <Text style={styles.impactLabel}>Potential yearly savings</Text>
+        <View style={styles.challengeRow}>
+          {[
+            {
+              title: "🥗 No takeout Week",
+              desc: "Ditch delivery for a week and save more.",
+              progress: "3/5",
+              save: "£40",
+            },
+            {
+              title: "📉 Track habits",
+              desc: "Track daily habits & hit your goal.",
+              progress: "2/5",
+              save: "£20",
+            },
+          ].map((item, idx) => (
+            <View key={idx} style={styles.challengeCard}>
+              <Text style={styles.challengeTitle}>{item.title}</Text>
+              <Text style={styles.challengeDesc}>{item.desc}</Text>
+              <Text style={styles.challengeProgress}>
+                {item.progress} • Save: {item.save}
+              </Text>
             </View>
-            <View>
-              <Text style={styles.impactPercent}>68%</Text>
-              <Text style={styles.impactLabel}>Success rate</Text>
-            </View>
-          </View>
+          ))}
+        </View>
+      </View>
 
-          <View style={styles.impactList}>
-            <Text>✅ Avoided 18 sugary drinks</Text>
-            <Text>✅ Added 5,000+ steps weekly</Text>
-            <Text>✅ Reduced caffeine by 20%</Text>
+      {/* Impact Card */}
+      <View style={styles.impactCard}>
+        <View style={styles.impactTop}>
+          <View>
+            <Text style={styles.impactAmount}>£1,605</Text>
+            <Text style={styles.impactLabel}>Potential yearly savings</Text>
+          </View>
+          <View>
+            <Text style={styles.impactPercent}>68%</Text>
+            <Text style={styles.impactLabel}>Success rate</Text>
           </View>
         </View>
-      </ScrollView>
+        <View style={styles.impactList}>
+          <Text>✅ Avoided 18 sugary drinks</Text>
+          <Text>✅ Added 5,000+ steps weekly</Text>
+          <Text>✅ Reduced caffeine by 20%</Text>
+        </View>
+      </View>
+</View>
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeContainer}>
+      <FlatList
+        data={goals}
+        keyExtractor={(item: any, index) =>
+          item._id?.toString() || index.toString()
+        }
+        renderItem={({ item }) => <GoalCard goal={item} />}
+        ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
+            <Text style={styles.noGoalsText}>No Active Goals</Text>
+          )
+        }
+        contentContainerStyle={{ paddingBottom: 40, }}
+      />
     </SafeAreaView>
   );
 }
@@ -172,20 +267,23 @@ const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
   },
-  scrollContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    backgroundColor:"#fff",
-  },
   container: {
     width: "100%",
-    paddingHorizontal: 16,
     paddingVertical: 10,
+    paddingHorizontal: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#F5FCFF",
+    backgroundColor: "#FFF",
+
+  },
+  Card:{
+    paddingHorizontal:16,
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingBottom: 20,
+    backgroundColor: "#fff",
   },
   headerLeft: {
     flexDirection: "row",
@@ -254,7 +352,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 12,
   },
-
   section: {
     marginTop: 28,
   },
@@ -273,33 +370,49 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontWeight: "500",
   },
-
-  goalsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
   goalCard: {
-    flex: 1,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    padding: 14,
-    elevation: 2,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: wp(2),
+    padding: wp(3),
+    marginBottom: hp(1),
+  },
+  goalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: hp(1),
+  },
+  goalEmoji: {
+    fontSize: wp(4),
+    marginRight: wp(2),
   },
   goalTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-    marginBottom: 6,
+    fontSize: wp(3.5),
+    fontWeight: "500",
+    color: "#1F2937",
   },
-  goalDetail: {
-    fontSize: 14,
-    marginVertical: 2,
-    color: "#444",
+  goalTarget: {
+    fontSize: wp(3),
+    color: "#6B7280",
+    marginBottom: hp(1),
   },
-  bold: {
-    fontWeight: "600",
+  goalStat: {
+    fontSize: wp(2.5),
+    color: "#6B7280",
+    marginBottom: hp(0.5),
   },
-
+  progressBarContainer: {
+    width: "100%",
+    height: hp(0.7),
+    backgroundColor: "#E5E7EB",
+    borderRadius: wp(1),
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    borderRadius: wp(1),
+  },
   challengeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -324,7 +437,6 @@ const styles = StyleSheet.create({
     color: "#FB923C",
     marginTop: 6,
   },
-
   impactCard: {
     marginTop: 28,
     backgroundColor: "#E7F8EE",
@@ -352,5 +464,11 @@ const styles = StyleSheet.create({
   },
   impactList: {
     gap: 8,
+  },
+  noGoalsText: {
+    fontSize: wp(3.5),
+    color: "#6B7280",
+    textAlign: "center",
+    marginVertical: hp(2),
   },
 });

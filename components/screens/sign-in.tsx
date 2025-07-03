@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { api } from "@/config/url";
+import { saveAuthToken } from "@/utils/authToken";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -56,54 +58,94 @@ export default function Page() {
   );
 
   useEffect(() => {
-    if (isSignedIn) {
-      console.log("User is signed in:", user);
-      router.push("/(tabs)");
-    }
+    const handleSignIn = async () => {
+      if (isSignedIn) {
+        // console.log("User is signed in"); //for checking user is signed in or not
+        // console.log("User email:", user?.emailAddresses[0].emailAddress); //for checking user mail
+        // console.log("User fullname:", user?.fullName); //for checking user full name
+        // console.log("your provider:", user?.externalAccounts?.[0]?.provider); //for checking user provider either google or apple
+        router.push("/(tabs)");
+
+        try {
+          const response = await fetch(api("/signin/user"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              providerName: user?.externalAccounts?.[0]?.provider,
+              fullName: user?.fullName,
+              email: user?.emailAddresses[0].emailAddress,
+            }),
+          });
+
+          const data = await response.json();
+          // console.log("Response status:", response.status); //for checking response status
+          // console.log("Response body:", data); //for checking response body
+          const token = data.data?.token;
+
+          if (response.status === 201 && token) {
+            // console.log("token stored"); //for checking token is stored or not
+            await saveAuthToken(token);
+          } else {
+            // console.log("token not stored"); //for checking token is stored or not
+          }
+        } catch (error) {
+          console.error("Sign-in request failed:", error);
+        }
+      } else {
+        console.log("User is not signed in");
+      }
+    };
+
+    handleSignIn();
   }, [isSignedIn, router, user]);
 
   return (
     <SafeAreaView style={styles.scrollContainer}>
       <View style={styles.loginContainer}>
         <View style={[styles.container, { paddingHorizontal: width * 0.08 }]}>
-        <View style={styles.textWrapper}>
-          <Text style={styles.welcomeText}>Welcome Back</Text>
-          <Text style={styles.title}>GoodBreach</Text>
-          <Text style={styles.subText}>Small Sacrifices, Big Rewards</Text>
+          <View style={styles.textWrapper}>
+            <Text style={styles.welcomeText}>Welcome Back</Text>
+            <Text style={styles.title}>GoodBreach</Text>
+            <Text style={styles.subText}>Small Sacrifices, Big Rewards</Text>
+          </View>
+
+          <Image
+            source={require("@/assets/images/logn_image.png")}
+            style={[
+              styles.loginImage,
+              { width: width * 0.8, height: width * 0.8 },
+            ]}
+            resizeMode="contain"
+          />
+
+          <TouchableOpacity
+            style={[styles.button, { width: width * 0.85 }]}
+            onPress={() => handleLogin("oauth_google")}
+          >
+            <Image
+              source={require("@/assets/images/logo_google.png")}
+              style={styles.logo}
+            />
+            <Text style={styles.buttonText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { width: width * 0.85 }]}
+            onPress={() => handleLogin("oauth_apple")}
+          >
+            <Image
+              source={require("@/assets/images/logo_apple.png")}
+              style={styles.logo}
+            />
+            <Text style={styles.buttonText}>Continue with Apple</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.endText}>
+            By continuing, you agree to our Privacy and Terms.
+          </Text>
         </View>
-
-        <Image
-          source={require("@/assets/images/logn_image.png")}
-          style={[styles.loginImage, { width: width * 0.8, height: width * 0.8 }]}
-          resizeMode="contain"
-        />
-
-        <TouchableOpacity
-          style={[styles.button, { width: width * 0.85 }]}
-          onPress={() => handleLogin("oauth_google")}
-        >
-          <Image
-            source={require("@/assets/images/logo_google.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.buttonText}>Continue with Google</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, { width: width * 0.85 }]}
-          onPress={() => handleLogin("oauth_apple")}
-        >
-          <Image
-            source={require("@/assets/images/logo_apple.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.buttonText}>Continue with Apple</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.endText}>
-          By continuing, you agree to our Privacy and Terms.
-        </Text>
-      </View>
       </View>
     </SafeAreaView>
   );
@@ -115,9 +157,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
   },
-  loginContainer:{
+  loginContainer: {
     flex: 1,
-    paddingTop:50,
+    paddingTop: 50,
   },
   container: {
     flex: 1,

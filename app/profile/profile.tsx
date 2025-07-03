@@ -1,4 +1,4 @@
-import { useRouter, router } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -41,8 +41,6 @@ const Profile: React.FC = () => {
   const [goalAlerts, setGoalAlerts] = useState(false);
 
   const [profileData, setProfileData] = useState({
-    name: "Sophia Bennett",
-    email: "sophia.b@email.com",
     phone: "(+91) 8800889352",
     dateOfBirth: "Select Date of Birth",
     salaryRange: "Select Salary Range",
@@ -101,14 +99,14 @@ const Profile: React.FC = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
-            }}
+           <Image
+        width={100}
+        height={100}
+        source={{ uri: user?.imageUrl }}
             style={styles.profileImage}
           />
-          <Text style={styles.profileName}>Sophia Bennett</Text>
-          <Text style={styles.profileEmail}>sophia.b@email.com</Text>
+          <Text style={styles.profileName}>{user?.fullName}</Text>
+          <Text style={styles.profileEmail}>{user?.emailAddresses[0].emailAddress}</Text>
         </View>
 
         <View style={styles.section}>
@@ -269,10 +267,10 @@ const Profile: React.FC = () => {
           <Text style={styles.sectionTitle}>Personal Details</Text>
 
           <View style={styles.profileImageSection}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
-              }}
+             <Image
+        width={100}
+        height={100}
+        source={{ uri: user?.imageUrl }}
               style={styles.editProfileImage}
             />
             <View style={styles.cameraIcon}>
@@ -284,7 +282,7 @@ const Profile: React.FC = () => {
             <Text style={styles.inputLabel}>Name</Text>
             <TextInput
               style={styles.input}
-              value={profileData.name}
+              value={user?.fullName}
               onChangeText={(text) =>
                 setProfileData((prev) => ({ ...prev, name: text }))
               }
@@ -293,10 +291,10 @@ const Profile: React.FC = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email</Text>
+            <Text style={styles.inputLabel}>Email Address</Text>
             <TextInput
               style={styles.input}
-              value={profileData.email}
+              value={user?.emailAddresses[0].emailAddress}
               onChangeText={(text) =>
                 setProfileData((prev) => ({ ...prev, email: text }))
               }
