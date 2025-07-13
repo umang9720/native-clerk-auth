@@ -15,56 +15,11 @@ import { useRouter } from "expo-router";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
 import { useIsFocused } from "@react-navigation/native";
+import { ActiveGoalsList } from "@/components/ActiveGoals/ActiveGoalList";
 
 const { width, height } = Dimensions.get("window");
 const wp = (percentage: any) => (width * percentage) / 100;
 const hp = (percentage: any) => (height * percentage) / 100;
-
-const GoalCard = ({ goal }: any) => (
-<View style={styles.Card}>
-    <View style={styles.goalCard}>
-    <View style={styles.goalHeader}>
-      {goal.goalImage?.endsWith(".jpg") ? (
-        <Image
-          source={{ uri: `${base_url}/images/${goal.goalImage}` }}
-          style={{ width: 24, height: 24, marginRight: 8 }}
-        />
-      ) : (
-        <Text style={styles.goalEmoji}>{goal.goalImage || "🎯"}</Text>
-      )}
-      <Text style={styles.goalTitle}>{goal.goalName || "Untitled Goal"}</Text>
-    </View>
-    <Text style={styles.goalTarget}>
-      Target: £{(goal.goalAmount ?? 0).toFixed(2)}
-    </Text>
-    <Text style={styles.goalStat}>
-      Saved: £{(goal.savedAmount ?? 0).toFixed(2)}
-    </Text>
-    <Text style={styles.goalStat}>
-      Progress:{" "}
-      {goal.goalAmount
-        ? Math.round(((goal.savedAmount ?? 0) / goal.goalAmount) * 100)
-        : 0}
-      %
-    </Text>
-    <View style={styles.progressBarContainer}>
-      <View
-        style={[
-          styles.progressBar,
-          {
-            width: `${
-              goal.goalAmount
-                ? Math.min(((goal.savedAmount ?? 0) / goal.goalAmount) * 100, 100)
-                : 0
-            }%`,
-            backgroundColor: "#FB923C",
-          },
-        ]}
-      />
-    </View>
-  </View>
-</View>
-);
 
 export default function Index() {
   const router = useRouter();
@@ -148,95 +103,95 @@ export default function Index() {
 
       <View style={styles.Card}>
         {/* Savings Card */}
-      <View style={styles.savingsCard}>
-        <View style={styles.savingsRow}>
-          <View>
-            <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
-            <Text style={styles.cardAmount}>£13.00</Text>
-            <Text style={styles.cardQuote}>
-              “Your habits are creating financial freedom.”
-            </Text>
+        <View style={styles.savingsCard}>
+          <View style={styles.savingsRow}>
+            <View>
+              <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
+              <Text style={styles.cardAmount}>£13.00</Text>
+              <Text style={styles.cardQuote}>
+                “Your habits are creating financial freedom.”
+              </Text>
+            </View>
+            <Text style={styles.streak}>🔥 3 Days</Text>
           </View>
-          <Text style={styles.streak}>🔥 3 Days</Text>
+          <View style={styles.habitRow}>
+            {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, idx) => (
+              <Text key={idx} style={{ fontSize: 18 }}>
+                {circle}
+              </Text>
+            ))}
+          </View>
         </View>
-        <View style={styles.habitRow}>
-          {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, idx) => (
-            <Text key={idx} style={{ fontSize: 18 }}>
-              {circle}
-            </Text>
-          ))}
-        </View>
-      </View>
 
-      {/* Active Goals Title */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Active Goals</Text>
+        {/* Active Goals Title */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Active Goals</Text>
+          </View>
         </View>
-      </View>
       </View>
     </>
   );
 
   const renderFooter = () => (
     <>
-<View style={styles.Card}>
+      <View style={styles.Card}>
         {/* Challenges Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Challenges</Text>
-          <TouchableOpacity
-            onPress={() => router.push("/dashboard/activeChallenges")}
-          >
-            <Text style={styles.seeAll}>See All</Text>
-          </TouchableOpacity>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Active Challenges</Text>
+            <TouchableOpacity
+              onPress={() => router.push("/dashboard/activeChallenges")}
+            >
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.challengeRow}>
+            {[
+              {
+                title: "🥗 No takeout Week",
+                desc: "Ditch delivery for a week and save more.",
+                progress: "3/5",
+                save: "£40",
+              },
+              {
+                title: "📉 Track habits",
+                desc: "Track daily habits & hit your goal.",
+                progress: "2/5",
+                save: "£20",
+              },
+            ].map((item, idx) => (
+              <View key={idx} style={styles.challengeCard}>
+                <Text style={styles.challengeTitle}>{item.title}</Text>
+                <Text style={styles.challengeDesc}>{item.desc}</Text>
+                <Text style={styles.challengeProgress}>
+                  {item.progress} • Save: {item.save}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        <View style={styles.challengeRow}>
-          {[
-            {
-              title: "🥗 No takeout Week",
-              desc: "Ditch delivery for a week and save more.",
-              progress: "3/5",
-              save: "£40",
-            },
-            {
-              title: "📉 Track habits",
-              desc: "Track daily habits & hit your goal.",
-              progress: "2/5",
-              save: "£20",
-            },
-          ].map((item, idx) => (
-            <View key={idx} style={styles.challengeCard}>
-              <Text style={styles.challengeTitle}>{item.title}</Text>
-              <Text style={styles.challengeDesc}>{item.desc}</Text>
-              <Text style={styles.challengeProgress}>
-                {item.progress} • Save: {item.save}
-              </Text>
+        {/* Impact Card */}
+        <View style={styles.impactCard}>
+          <View style={styles.impactTop}>
+            <View>
+              <Text style={styles.impactAmount}>£1,605</Text>
+              <Text style={styles.impactLabel}>Potential yearly savings</Text>
             </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Impact Card */}
-      <View style={styles.impactCard}>
-        <View style={styles.impactTop}>
-          <View>
-            <Text style={styles.impactAmount}>£1,605</Text>
-            <Text style={styles.impactLabel}>Potential yearly savings</Text>
+            <View>
+              <Text style={styles.impactPercent}>68%</Text>
+              <Text style={styles.impactLabel}>Success rate</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.impactPercent}>68%</Text>
-            <Text style={styles.impactLabel}>Success rate</Text>
+          <View style={styles.impactList}>
+            <Text>✅ Avoided 18 sugary drinks</Text>
+            <Text>✅ Added 5,000+ steps weekly</Text>
+            <Text>✅ Reduced caffeine by 20%</Text>
           </View>
         </View>
-        <View style={styles.impactList}>
-          <Text>✅ Avoided 18 sugary drinks</Text>
-          <Text>✅ Added 5,000+ steps weekly</Text>
-          <Text>✅ Reduced caffeine by 20%</Text>
-        </View>
       </View>
-</View>
     </>
   );
 
@@ -247,8 +202,12 @@ export default function Index() {
         keyExtractor={(item: any, index) =>
           item._id?.toString() || index.toString()
         }
-        renderItem={({ item }) => <GoalCard goal={item} />}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={() => (
+          <>
+            {renderHeader()}
+            <ActiveGoalsList goals={goals} />
+          </>
+        )}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           loading ? (
@@ -257,7 +216,8 @@ export default function Index() {
             <Text style={styles.noGoalsText}>No Active Goals</Text>
           )
         }
-        contentContainerStyle={{ paddingBottom: 40, }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        renderItem={undefined}
       />
     </SafeAreaView>
   );
@@ -275,10 +235,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FFF",
-
   },
-  Card:{
-    paddingHorizontal:16,
+  Card: {
+    paddingHorizontal: 16,
   },
   scrollContainer: {
     flex: 1,

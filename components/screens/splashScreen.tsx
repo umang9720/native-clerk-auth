@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
   StatusBar,
-  Image
-} from 'react-native';
+  Image,
+} from "react-native";
 
 interface SplashScreenProps {
   onSplashComplete: () => void;
 }
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
   useEffect(() => {
@@ -26,11 +26,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
   return (
     <View style={styles.container}>
       <Image
-  source={require('@/assets/images/splash_icon.png')}
-  style={{ width: 100, height: 100, marginBottom:15 }}
-/>
-
-
+        source={require("@/assets/images/splash_icon.png")}
+        style={{ width: 80, height: 80, marginBottom: 15 }}
+      />
       <StatusBar barStyle="light-content" backgroundColor="#F0C0BE" />
       <Text style={styles.title}>Good Breach</Text>
     </View>
@@ -40,14 +38,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#004110',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: width * 0.08,
-    fontWeight:"semibold",
-    color: '#000',
+    fontWeight: "semibold",
+    color: "#000",
     marginBottom: height * 0.01,
   },
 });

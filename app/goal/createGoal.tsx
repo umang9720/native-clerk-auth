@@ -6,136 +6,98 @@ import {
   ScrollView,
   Dimensions,
   TextInput,
-  Image,
   Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { base_url } from "@/config/url";
 import { getAuthToken } from "@/utils/authToken";
+import { base_url } from "@/config/url";
 
 const { width } = Dimensions.get("window");
-const cardSize = width * 0.25; // roughly 25% of screen width
+const cardSize = width * 0.25;
 
 const CreateGoal = () => {
   const [selectedType, setSelectedType] = useState("");
   const [goalName, setGoalName] = useState("");
   const [goalAmount, setGoalAmount] = useState("");
   const [durationInDate, setDurationInDate] = useState("");
-
-  const endpoint = "/create/goal";
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const goalTypes = [
     { type: "trip", emoji: "🧳", label: "Trip", image: "trip.jpg" },
     { type: "laptop", emoji: "💻", label: "Laptop", image: "laptop.jpg" },
-    {
-      type: "college fee",
-      emoji: "🎓",
-      label: "College Fee",
-      image: "college-fee.jpg",
-    },
+    { type: "college fee", emoji: "🎓", label: "College Fee", image: "college.jpg" },
     { type: "game", emoji: "🎮", label: "Game", image: "game.jpg" },
-    {
-      type: "future savings",
-      emoji: "💰",
-      label: "Future Savings",
-      image: "future.jpg",
-    },
-    {
-      type: "emergency funds",
-      emoji: "🛡️",
-      label: "Emergency Funds",
-      image: "emergency.jpg",
-    },
-    {
-      type: "electronics",
-      emoji: "📱",
-      label: "Electronics",
-      image: "electronics.jpg",
-    },
-    {
-      type: "accessories",
-      emoji: "👜",
-      label: "Accessories",
-      image: "accessories.jpg",
-    },
+    { type: "future savings", emoji: "💰", label: "Future Savings", image: "future.jpg" },
+    { type: "emergency funds", emoji: "🛡️", label: "Emergency Funds", image: "emergency.jpg" },
+    { type: "electronics", emoji: "📱", label: "Electronics", image: "electronics.jpg" },
+    { type: "accessories", emoji: "👜", label: "Accessories", image: "accessories.jpg" },
   ];
 
-const getFutureDate = (days: string): string => {
-  const today = new Date();
-  const dayCount = parseInt(days, 10);
-  const futureDate = new Date(today.setDate(today.getDate() + dayCount));
+  const getFutureDate = (days: string): string => {
+    const today = new Date();
+    const dayCount = parseInt(days, 10);
+    const futureDate = new Date(today.setDate(today.getDate() + dayCount));
+    const dayStr = futureDate.getDate().toString().padStart(2, "0");
+    const monthStr = (futureDate.getMonth() + 1).toString().padStart(2, "0");
+    const year = futureDate.getFullYear();
+    return `${dayStr}-${monthStr}-${year}`;
+  };
 
-  const day = futureDate.getDate().toString().padStart(2, "0");
-  const month = (futureDate.getMonth() + 1).toString().padStart(2, "0"); // Months are 0-based
-  const year = futureDate.getFullYear();
-
-  return `${day}-${month}-${year}`;
-};
-
-// console.log(getFutureDate)
   const handleCreateGoal = async () => {
     if (!goalName || !goalAmount || !durationInDate || !selectedType) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
+
     const selectedGoal = goalTypes.find((g) => g.type === selectedType);
     const goalImage = selectedGoal?.image || "default.jpg";
     const token = await getAuthToken();
 
-    const response = await fetch(`${base_url}${endpoint}`, {
+    const response = await fetch(`${base_url}/create/goal`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-body: JSON.stringify({
-  goalImage,
-  goalName,
-  goalAmount: parseFloat(goalAmount),
-  durationInDate: getFutureDate(durationInDate), // returns "dd/mm/yyyy"
-  reward: {
-    name: "Laptop Bag",
-    description: "Get a stylish laptop bag on goal completion.",
-    imageUrl: "laptop-bag.jpg",
-  },
-}),
+      body: JSON.stringify({
+        goalImage,
+        goalName,
+        goalAmount: parseFloat(goalAmount),
+        durationInDate: getFutureDate(durationInDate),
+        reward: {
+          name: "Laptop Bag",
+          description: "Get a stylish laptop bag on goal completion.",
+          imageUrl: "laptop-bag.jpg",
+        },
+      }),
     });
-    console.log(goalName);
-    console.log(goalAmount);
-    console.log(durationInDate);
-    console.log(goalImage);
 
     const data = await response.json();
-    console.log("Response status:", response.status); //for checking response status
-    console.log("Response body:", data); //for checking response body
-    if (response.status === 201) {
-      Alert.alert("Success", "Goal created successfully!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+    if (response.status === 201 && data?.data?.id) {
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        router.push({ pathname: "/goal/SavingMethod", params: { goalId: data.data.id } });
+      }, 3000);
     } else {
       Alert.alert("Error", "Failed to create goal");
-      console.log("❌ Goal creation failed:", response);
-      console.log("❌ Goal creation failed:", data);
     }
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={28} />
         </TouchableOpacity>
-        <Text style={styles.title}>All Challenge</Text>
+        <Text style={styles.title}>Create Goal</Text>
       </View>
+
       <ScrollView style={styles.scrollView}>
-        {/* Goal Images */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.goalRow}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.goalRow}>
           {goalTypes.map((goal) => (
             <TouchableOpacity
               key={goal.type}
@@ -150,150 +112,100 @@ body: JSON.stringify({
             </TouchableOpacity>
           ))}
         </ScrollView>
+
         <View style={styles.inputContainer}>
-          <View style={{ marginBottom: 10 }}>
-            <Text>Goal Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Goal Name"
-              value={goalName}
-              onChangeText={setGoalName}
-            />
-          </View>
-          <View style={{ marginTop: 10 }}>
-            <Text>Goal Amount</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Goal Amount (£)"
-              value={goalAmount}
-              onChangeText={setGoalAmount}
-              keyboardType="numeric"
-            />
-          </View>
+          <Text>Goal Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Europe Trip"
+            value={goalName}
+            onChangeText={setGoalName}
+          />
+          <Text>Goal Amount (£)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 200"
+            value={goalAmount}
+            onChangeText={setGoalAmount}
+            keyboardType="numeric"
+          />
         </View>
-        <View style={styles.durationContainer}>
-          <Text style={styles.sectionTitle}>Duration</Text>
-          <View style={styles.durationButtons}>
-            {["5", "15", "30"].map((day) => (
-              <TouchableOpacity
-                key={day}
+
+        <Text style={styles.sectionTitle}>Duration</Text>
+        <View style={styles.durationButtons}>
+          {["5", "15", "30"].map((day) => (
+            <TouchableOpacity
+              key={day}
+              style={[
+                styles.durationButton,
+                durationInDate === day && styles.durationButtonSelected,
+              ]}
+              onPress={() => setDurationInDate(day)}
+            >
+              <Text
                 style={[
-                  styles.durationButton,
-                  durationInDate === day && styles.durationButtonSelected,
+                  styles.durationText,
+                  durationInDate === day && styles.durationTextSelected,
                 ]}
-                onPress={() => setDurationInDate(day)}
               >
-                <Text
-                  style={[
-                    styles.durationText,
-                    durationInDate === day && styles.durationTextSelected,
-                  ]}
-                >
-                  {day} Days
-                </Text>
-              </TouchableOpacity>
-            ))}
-            {/* <TouchableOpacity
-      style={[
-        styles.durationButton,
-        durationInDate === "custom" && styles.durationButtonSelected,
-      ]}
-      onPress={() => {
-        // You may integrate a date picker modal here
-        const customDays = 40; // Replace with real calculation
-        setDurationDay(customDays.toString());
-      }}
-    >
-      <Text
-        style={[
-          styles.durationText,
-          durationInDate === "custom" && styles.durationTextSelected,
-        ]}
-      >
-        Custom Date
-      </Text>
-    </TouchableOpacity> */}
+                {day} Days
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {goalAmount && durationInDate && (
+          <View style={styles.greenBox}>
+            <Text style={styles.greenBoxText}>
+              Daily Savings Amount{" "}
+              <Text style={styles.greenBoxHighlight}>
+                £{(parseFloat(goalAmount) / parseInt(durationInDate)).toFixed(2)}
+              </Text>{" "}
+              to reach £{goalAmount} in {durationInDate} days.
+            </Text>
           </View>
+        )}
 
-          {/* Daily Amount Info */}
-          {goalAmount && durationInDate && (
-            <View style={styles.greenBox}>
-              <Text style={styles.greenBoxText}>
-                Daily Savings Amount{" "}
-                <Text style={styles.greenBoxHighlight}>
-                  £
-                  {(parseFloat(goalAmount) / parseInt(durationInDate)).toFixed(
-                    2
-                  )}
-                </Text>{" "}
-                to reach{" "}
-                <Text style={styles.greenBoxHighlight}>£{goalAmount}</Text> in{" "}
-                {durationInDate} days.
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Reward Partner */}
-        <View style={styles.rewardsSection}>
-          <Text style={styles.sectionTitle}>Reward Partner (Optional)</Text>
-          <TouchableOpacity style={styles.rewardCard}>
-            <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rewardTitle}>Booking.com</Text>
-              <Text style={styles.rewardDescription}>
-                10% off on your first booking.
-              </Text>
-            </View>
-            <Image
-              source={require("@/assets/images/hotel.png")}
-              style={styles.rewardImage}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.rewardCard}>
-            <Ionicons name="ellipse-outline" size={20} color="#9CA3AF" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rewardTitle}>Travel Bag</Text>
-              <Text style={styles.rewardDescription}>
-                10€ off Travel Bag of American.
-              </Text>
-            </View>
-            <Image
-              source={require("@/assets/images/bag.png")}
-              style={styles.rewardImage}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Create Goal Button */}
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={handleCreateGoal}
-        >
+        <TouchableOpacity style={styles.createButton} onPress={handleCreateGoal}>
           <Text style={styles.createButtonText}>Create Goal</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {showSuccessModal && (
+        <View style={styles.successOverlay}>
+          <View style={styles.successPopup}>
+            <Ionicons name="checkmark-circle" size={64} color="#10B981" />
+            <Text style={styles.successTitle}>You did it!</Text>
+            <Text style={styles.successSubtitle}>You&apos;ve created your goal.</Text>
+            <Text style={{ marginTop: 10 }}>Redirecting in 3 sec...</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
 export default CreateGoal;
 
+// ...Styles remain unchanged but include `successOverlay` and `successPopup` as provided earlier
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+ header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    marginBottom: 16,
-    paddingLeft: 20,
-    backgroundColor: "#fff",
+    gap: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "#121417",
   },
@@ -433,7 +345,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  successOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 1000,
+},
+successPopup: {
+  backgroundColor: "#fff",
+  padding: 30,
+  borderRadius: 12,
+  alignItems: "center",
+  width: "80%",
+},
+successTitle: {
+  fontSize: 22,
+  fontWeight: "bold",
+  marginTop: 10,
+},
+successSubtitle: {
+  fontSize: 16,
+  color: "#6B7280",
+  marginTop: 5,
+  textAlign: "center",
+},
+
 });
-function setLoading(arg0: boolean) {
-  throw new Error("Function not implemented.");
-}
+

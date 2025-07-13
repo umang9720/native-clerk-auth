@@ -1,4 +1,3 @@
-import React from "react";
 import {
   View,
   Text,
@@ -8,46 +7,130 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import { FontAwesome5 } from "@expo/vector-icons";
+// import { FontAwesome5 } from "@expo/vector-icons";
 import { ProgressBar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { ActiveGoalsList } from "@/components/ActiveGoals/ActiveGoalList";
+import { useEffect, useState } from "react";
+import { getAuthToken } from "@/utils/authToken";
+import { base_url } from "@/config/url";
+import { useIsFocused } from "@react-navigation/native"; // if needed
 
 Dimensions.get("window");
 
 const SmartGoalsScreen = () => {
-  const router= useRouter();
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true); 
+   const [walletData, setWalletData] = useState<any>(null);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        setLoading(true);
+        const token = await getAuthToken("user");
+        if (!token) {
+          console.warn("User token not found");
+          setLoading(false);
+          return;
+        }
+
+        //wallet connection
+       const fetchWalletData = async () => {
+      const token = await getAuthToken("user");
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${base_url}/wallet/user`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const json = await response.json();
+        const wallet = json?.data?.data;
+        setWalletData(wallet);
+        console.log("Wallet data:", wallet);
+      } catch (error) {
+        console.error("Error fetching wallet data", error);
+      }
+    };
+
+    fetchWalletData();
+
+        //for displaying active goals of user
+        const response = await fetch(`${base_url}/goals/user`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.status === 201 && Array.isArray(data?.data?.data)) {
+          const allGoals = data.data.data;
+
+          // 🟢 Reverse and then filter active goals
+          const activeGoals = allGoals
+            .reverse()
+            .filter((goal: any) => goal.status === "active");
+
+          setGoals(activeGoals);
+        } else {
+          setGoals([]);
+        }
+        const activeGoals =
+          data?.data?.data?.filter((g: any) => g.status === "active") || [];
+        setGoals(activeGoals.reverse()); // Reverse to show latest at top
+      } catch (error) {
+        console.error("Error fetching goals:", error);
+        setGoals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isFocused) {
+      fetchGoals();
+    }
+  }, [isFocused]);
+
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.safeContainer}>
-        {/* Header */}
-    <View style={styles.container}>
-          <Text style={styles.headerText}>Smart Goals</Text>
-          <TouchableOpacity style={styles.headerIcon}
-            onPress={() => router.push("/goal/suggestion")}
-           >
-            <Image
+      {/* Header */}
+      <View style={styles.container}>
+        <Text style={styles.headerText}>Smart Goals</Text>
+        <TouchableOpacity
+          style={styles.headerIcon}
+          onPress={() => router.push("/goal/suggestion")}
+        >
+          <Image
             source={require("@/assets/images/Suggestion.png")}
             style={styles.headerLeftIcon}
           />
-          </TouchableOpacity>
+        </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
-
-
         {/* Total Saved Card */}
         <View style={styles.totalCard}>
           <View style={styles.cardTop}>
             <View>
-              <Text style={styles.amount}>£300</Text>
+              <Text style={styles.amount}>£ {walletData?.totalSaveAmount ?? "—"}</Text>
               <Text style={styles.cardLabel}>Total saved</Text>
             </View>
             <Image source={require("@/assets/images/Target.png")} />
           </View>
           <View style={styles.progressWrapper}>
-           <View style={styles.progressTextContainer}>
-             <Text style={styles.progressText}>Overall Progress</Text>
-            <Text style={styles.progressText}>£300 of £2245</Text>
-           </View>
+            <View style={styles.progressTextContainer}>
+              <Text style={styles.progressText}>Overall Progress</Text>
+              <Text style={styles.progressText}> £ {walletData?.totalSaveAmount ?? "—"} of {walletData?.totalTargetAmount ?? "—"}</Text>
+            </View>
             <ProgressBar
               progress={0.13}
               color="#F97316"
@@ -64,55 +147,23 @@ const SmartGoalsScreen = () => {
         </View>
 
         {/* Goal Cards */}
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <FontAwesome5 name="plane" size={20} color="#0EA5E9" />
-            <Text style={styles.goalTitle}> Spain Trip</Text>
-            <View style={styles.goalStatus}>
-              <Text style={styles.statusTextGreen}>● On Track</Text>
-            </View>
-          </View>
-          <Text style={styles.daysLeft}>
-            Days Left: <Text style={styles.bold}>47</Text>
+        {loading ? (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>Loading...</Text>
+        ) : goals.length > 0 ? (
+          <ActiveGoalsList goals={goals} />
+        ) : (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>
+            No active goals
           </Text>
-          <Text>
-            Saved: <Text style={styles.bold}>£200</Text>   Target:{" "}
-            <Text style={styles.bold}>£400</Text>
-          </Text>
-          <ProgressBar
-            progress={0.5}
-            color="#60A5FA"
-            style={styles.progressBarGoal}
-          />
-        </View>
+        )}
 
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <FontAwesome5 name="medkit" size={20} color="#F97316" />
-            <Text style={styles.goalTitle}> Medical Emergency</Text>
-            <View style={styles.goalStatus}>
-              <Text style={styles.statusTextRed}>● Overdue</Text>
-            </View>
-          </View>
-          <Text style={styles.daysLeft}>
-            Days Left: <Text style={styles.bold}>32</Text>
-          </Text>
-          <Text>
-            Saved: <Text style={styles.bold}>£300</Text>   Target:{" "}
-            <Text style={styles.bold}>£500</Text>
-          </Text>
-          <ProgressBar
-            progress={0.6}
-            color="#60A5FA"
-            style={styles.progressBarGoal}
-          />
-        </View>
-      
-
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}  onPress={() => router.push("/goal/createGoal")}>
-        <Text style={styles.fabIcon}>＋</Text>
-      </TouchableOpacity>
+        {/* Floating Action Button */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/goal/createGoal")}
+        >
+          <Text style={styles.fabIcon}>＋</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -131,7 +182,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#ffffff",
-
   },
   headerLeftIcon: {
     width: 24,
@@ -141,9 +191,7 @@ const styles = StyleSheet.create({
   scroll: {
     padding: 16,
     paddingBottom: 100,
-       backgroundColor: '#F9FAFB',
-
-
+    backgroundColor: "#F9FAFB",
   },
   header: {
     flexDirection: "row",
@@ -162,7 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#DBFFE9",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius:8,
+    borderRadius: 8,
   },
   totalCard: {
     backgroundColor: "#083623",
@@ -191,11 +239,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 12,
   },
-  progressTextContainer:{
-    display:"flex",
-    flexDirection:"row",
-    justifyContent:"space-between",
-    marginBottom:4,
+  progressTextContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
   progressText: {
     textAlign: "right",

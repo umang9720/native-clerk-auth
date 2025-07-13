@@ -1,256 +1,248 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { base_url } from "@/config/url";
+import { getAuthToken } from "@/utils/authToken";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
-
-interface GoalSuggestion {
-  id: string;
-  title: string;
-  duration: string;
-  amount: string;
-  description: string;
-  icon: string;
-  color: string;
-}
+  ActivityIndicator,
+  FlatList,
+  Image
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const GoalSuggestionsPage: React.FC = () => {
-  const router =useRouter();
-  const [goalSuggestions] = useState<GoalSuggestion[]>([
-    {
-      id: '1',
-      title: 'Charity',
-      duration: '30 Days',
-      amount: '£30.00',
-      description: 'Purchase one time subscriptions of all OTTs instead of buying every OTTs description and save More.',
-      icon: '💜',
-      color: '#8B5CF6',
-    },
-    {
-      id: '2',
-      title: 'Sony Camera',
-      duration: '25 Days',
-      amount: '£25.00',
-      description: 'Purchase one time subscriptions of all OTTs instead of buying every OTTs description and save More.',
-      icon: '📷',
-      color: '#EC4899',
-    },
-    {
-      id: '3',
-      title: 'Mother\'s Day',
-      duration: '10 Days',
-      amount: '£10.00',
-      description: 'Purchase one time subscriptions of all OTTs instead of buying every OTTs description and save More.',
-      icon: '💐',
-      color: '#F59E0B',
-    },
-  ]);
+  const [loading, setLoading] = useState(false);
+const [goals, setGoals] = useState<any[]>([]);
 
-  const CrossIcon = () => (
-    <View style={styles.crossIcon}>
-      <View style={styles.crossLine1} />
-      <View style={styles.crossLine2} />
-    </View>
-  );
+  // const endpoint = "/suggestion/all";
 
-  const handleAddGoal = (goalId: string) => {
-    console.log(`Adding goal with ID: ${goalId}`);
-    // Add your goal adding logic here
-  };
+  useEffect(() => {
+    const fetchGoalSuggestion = async () => {
+      try {
+        setLoading(true);
+        const token = await getAuthToken("user");
+        if (!token) {
+          console.warn("User not found in storage");
+          setLoading(false);
+          return;
+        }
 
-  const renderGoalCard = (goal: GoalSuggestion) => (
-    <View key={goal.id} style={styles.goalCard}>
-      <View style={styles.goalHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: goal.color }]}>
-          <Text style={styles.goalIcon}>{goal.icon}</Text>
-        </View>
-        <View style={styles.goalInfo}>
-          <Text style={styles.goalTitle}>{goal.title}</Text>
-          <Text style={styles.goalDuration}>Duration: {goal.duration}</Text>
-        </View>
-        <Text style={styles.goalAmount}>{goal.amount}</Text>
+        const response = await fetch(`${base_url}/suggestion/all`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+        console.log("Parsed response data:", data);
+
+        const suggestions = data?.data?.data;
+        if (response.ok && Array.isArray(suggestions)) {
+        setGoals([...suggestions].reverse()); 
+        } else {
+          console.log("No valid suggestions data");
+          setGoals([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching goal suggestions:", error.message);
+        setGoals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGoalSuggestion();
+  }, []);
+
+const renderSuggestion = ({ item }: { item: any }) => (
+
+  <View style={styles.suggestionCard}>
+    <View style={styles.topRow}>
+      <View style={styles.iconCircle}>
+        {item.icon?.startsWith("http") ? (
+          <Image source={{ uri: item.icon }} style={styles.goalIconImage} />
+        ) : (
+          <Text style={styles.goalIcon}>{item.icon || "🎯"}</Text>
+        )}
       </View>
-      
-      <Text style={styles.goalDescription}>{goal.description}</Text>
-      
-      <TouchableOpacity
-        style={styles.addGoalButton}
-        onPress={() => handleAddGoal(goal.id)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.addGoalButtonText}>Add Goal</Text>
-      </TouchableOpacity>
+
+      <View style={styles.titleSection}>
+        <Text style={styles.suggestionTitle}>{item.title}</Text>
+        <Text style={styles.durationText}>Duration: {item.durationInDays} Days</Text>
+      </View>
+
+      <Text style={styles.amountText}>£{item.amount?.toFixed(2)}</Text>
     </View>
-  );
+
+  <View style={styles.footer}>
+  <Text style={styles.description}>{item.description}</Text>
+  <TouchableOpacity style={styles.addButton}>
+    <Text style={styles.addButtonText}>Add Goal</Text>
+  </TouchableOpacity>
+</View>
+
+  </View>
+);
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton}  onPress={() => router.back()}
-          >
-            <CrossIcon />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Goal Suggestions</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <ScrollView 
-          style={styles.content} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {goalSuggestions.map(renderGoalCard)}
-          
-          {/* Empty space at bottom */}
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="close" size={28} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Goal Suggestions</Text>
       </View>
+
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#007AFF"
+          style={{ marginTop: 20 }}
+        />
+      ) : goals.length === 0 ? (
+        <Text style={styles.emptyText}>No goal suggestions</Text>
+      ) : (
+        <FlatList
+          data={goals}
+          keyExtractor={(item, index) =>
+            item._id?.toString() || index.toString()
+          }
+          renderItem={renderSuggestion}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
     </SafeAreaView>
   );
 };
 
+export default GoalSuggestionsPage;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#F9FAFB",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
-  closeButton: {
-    padding: 5,
-  },
-  crossIcon: {
-    width: 20,
-    height: 20,
-    position: 'relative',
-  },
-  crossLine1: {
-    position: 'absolute',
-    width: 14,
-    height: 1.5,
-    backgroundColor: '#666',
-    top: 9,
-    left: 3,
-    transform: [{ rotate: '45deg' }],
-  },
-  crossLine2: {
-    position: 'absolute',
-    width: 14,
-    height: 1.5,
-    backgroundColor: '#666',
-    top: 9,
-    left: 3,
-    transform: [{ rotate: '-45deg' }],
-  },
-  headerTitle: {
+  title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    flex: 1,
+    fontWeight: "600",
+    color: "#121417",
   },
-  headerSpacer: {
-    width: 30,
+  listContainer: {
+    padding: 16,
   },
-  content: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  goalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-  },
-  goalIcon: {
-    fontSize: 24,
-  },
-  goalInfo: {
-    flex: 1,
-  },
-  goalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  goalDuration: {
-    fontSize: 14,
-    color: '#666',
-  },
-  goalAmount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-  },
-  goalDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  addGoalButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-  },
-  addGoalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  bottomSpacer: {
-    height: 40,
-  },
-});
+suggestionCard: {
+  backgroundColor: "#FFFFFF",
+  padding: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  marginBottom: 16,
+},
 
-export default GoalSuggestionsPage;
+topRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 10,
+},
+
+iconCircle: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: "#F3F4F6",
+  alignItems: "center",
+  justifyContent: "center",
+  marginRight: 12,
+},
+
+goalIcon: {
+  fontSize: 20,
+},
+
+goalIconImage: {
+  width: 24,
+  height: 24,
+  resizeMode: "contain",
+},
+
+titleSection: {
+  flex: 1,
+},
+
+suggestionTitle: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#111827",
+},
+
+durationText: {
+  fontSize: 14,
+  color: "#6B7280",
+},
+
+amountText: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: "#16A34A",
+},
+
+addButtonText: {
+  color: "#FFFFFF",
+  fontWeight: "600",
+  fontSize: 14,
+},
+
+  suggestionAmount: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 16,
+    marginTop: 32,
+    color: "#6B7280",
+  },
+ footer: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginTop: 8,
+  flexWrap: "wrap",
+  gap: 8,
+},
+
+description: {
+  flex: 1,
+  fontSize: 13,
+  fontWeight: "400",
+  color: "#637587",
+  lineHeight: 18,
+  paddingRight: 8,
+},
+
+addButton: {
+  backgroundColor: "#16A34A",
+  paddingVertical: 6,
+  paddingHorizontal: 14,
+  borderRadius: 6,
+  alignSelf: "flex-start",
+},
+
+});

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { onboardingData } from '@/utils/onBoardingData';
 import { setOnboardingCompleted } from '@/utils/asyncStorage';
+import { Ionicons } from '@expo/vector-icons';
 
 interface OnboardingScreenProps {
   onOnboardingComplete: () => void;
@@ -85,7 +86,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onOnboardingComplet
               </TouchableOpacity>
               
               <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-                <Text style={styles.nextArrow}>→</Text>
+                 <Ionicons name="arrow-back" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
           )}
