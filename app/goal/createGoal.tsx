@@ -13,7 +13,7 @@ import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { base_url} from "@/config/url";
+import { base_url } from "@/config/url";
 import { getAuthToken } from "@/utils/authToken";
 
 const { width } = Dimensions.get("window");
@@ -23,9 +23,9 @@ const CreateGoal = () => {
   const [selectedType, setSelectedType] = useState("");
   const [goalName, setGoalName] = useState("");
   const [goalAmount, setGoalAmount] = useState("");
-  const [durationInDays, setDurationInDays] = useState("");
+  const [durationInDate, setDurationInDate] = useState("");
 
-  const endpoint="/create/goal";
+  const endpoint = "/create/goal";
 
   const goalTypes = [
     { type: "trip", emoji: "🧳", label: "Trip", image: "trip.jpg" },
@@ -63,39 +63,50 @@ const CreateGoal = () => {
     },
   ];
 
+const getFutureDate = (days: string): string => {
+  const today = new Date();
+  const dayCount = parseInt(days, 10);
+  const futureDate = new Date(today.setDate(today.getDate() + dayCount));
 
+  const day = futureDate.getDate().toString().padStart(2, "0");
+  const month = (futureDate.getMonth() + 1).toString().padStart(2, "0"); // Months are 0-based
+  const year = futureDate.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
+
+// console.log(getFutureDate)
   const handleCreateGoal = async () => {
-    if (!goalName || !goalAmount || !durationInDays || !selectedType) {
+    if (!goalName || !goalAmount || !durationInDate || !selectedType) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-   const selectedGoal = goalTypes.find((g) => g.type === selectedType);
-const goalImage = selectedGoal?.image || "default.jpg";
-const token = await getAuthToken(); 
+    const selectedGoal = goalTypes.find((g) => g.type === selectedType);
+    const goalImage = selectedGoal?.image || "default.jpg";
+    const token = await getAuthToken();
 
-    const response = await fetch(`${base_url}${endpoint}`
- , {
+    const response = await fetch(`${base_url}${endpoint}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        goalImage,
-        goalName,
-        goalAmount: parseFloat(goalAmount),
-        durationInDays,
-        reward: {
-          name: "Laptop Bag",
-          description: "Get a stylish laptop bag on goal completion.",
-          imageUrl: "laptop-bag.jpg",
-        },
-      }),
+body: JSON.stringify({
+  goalImage,
+  goalName,
+  goalAmount: parseFloat(goalAmount),
+  durationInDate: getFutureDate(durationInDate), // returns "dd/mm/yyyy"
+  reward: {
+    name: "Laptop Bag",
+    description: "Get a stylish laptop bag on goal completion.",
+    imageUrl: "laptop-bag.jpg",
+  },
+}),
     });
- console.log(goalName)
- console.log(goalAmount)
- console.log(durationInDays)
- console.log(goalImage)
+    console.log(goalName);
+    console.log(goalAmount);
+    console.log(durationInDate);
+    console.log(goalImage);
 
     const data = await response.json();
     console.log("Response status:", response.status); //for checking response status
@@ -168,14 +179,14 @@ const token = await getAuthToken();
                 key={day}
                 style={[
                   styles.durationButton,
-                  durationInDays === day && styles.durationButtonSelected,
+                  durationInDate === day && styles.durationButtonSelected,
                 ]}
-                onPress={() => setDurationInDays(day)}
+                onPress={() => setDurationInDate(day)}
               >
                 <Text
                   style={[
                     styles.durationText,
-                    durationInDays === day && styles.durationTextSelected,
+                    durationInDate === day && styles.durationTextSelected,
                   ]}
                 >
                   {day} Days
@@ -185,7 +196,7 @@ const token = await getAuthToken();
             {/* <TouchableOpacity
       style={[
         styles.durationButton,
-        durationInDays === "custom" && styles.durationButtonSelected,
+        durationInDate === "custom" && styles.durationButtonSelected,
       ]}
       onPress={() => {
         // You may integrate a date picker modal here
@@ -196,7 +207,7 @@ const token = await getAuthToken();
       <Text
         style={[
           styles.durationText,
-          durationInDays === "custom" && styles.durationTextSelected,
+          durationInDate === "custom" && styles.durationTextSelected,
         ]}
       >
         Custom Date
@@ -205,19 +216,19 @@ const token = await getAuthToken();
           </View>
 
           {/* Daily Amount Info */}
-          {goalAmount && durationInDays && (
+          {goalAmount && durationInDate && (
             <View style={styles.greenBox}>
               <Text style={styles.greenBoxText}>
                 Daily Savings Amount{" "}
                 <Text style={styles.greenBoxHighlight}>
                   £
-                  {(parseFloat(goalAmount) / parseInt(durationInDays)).toFixed(
+                  {(parseFloat(goalAmount) / parseInt(durationInDate)).toFixed(
                     2
                   )}
                 </Text>{" "}
                 to reach{" "}
                 <Text style={styles.greenBoxHighlight}>£{goalAmount}</Text> in{" "}
-                {durationInDays} days.
+                {durationInDate} days.
               </Text>
             </View>
           )}

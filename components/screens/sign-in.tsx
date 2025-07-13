@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { api } from "@/config/url";
+import { base_url} from "@/config/url";
 import { saveAuthToken } from "@/utils/authToken";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -31,7 +31,7 @@ export default function Page() {
   useWarmUpBrowser();
 
   const { startSSOFlow } = useSSO();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const { user } = useUser();
   const { width } = useWindowDimensions();
 
@@ -59,29 +59,37 @@ export default function Page() {
 
   useEffect(() => {
     const handleSignIn = async () => {
+  const endpoint="/signin/user"
       if (isSignedIn) {
-        // console.log("User is signed in"); //for checking user is signed in or not
-        // console.log("User email:", user?.emailAddresses[0].emailAddress); //for checking user mail
-        // console.log("User fullname:", user?.fullName); //for checking user full name
-        // console.log("your provider:", user?.externalAccounts?.[0]?.provider); //for checking user provider either google or apple
+        console.log(user?.imageUrl)
+        console.log(userId)
+        console.log("User is signed in"); //for checking user is signed in or not
+        console.log("User email:", user?.emailAddresses[0].emailAddress); //for checking user mail
+        console.log("User fullname:", user?.fullName); //for checking user full name
+        console.log("your provider:", user?.externalAccounts?.[0]?.provider); //for checking user provider either google or apple
         router.push("/(tabs)");
 
         try {
-          const response = await fetch(api("/signin/user"), {
+          console.log("full api", base_url+endpoint)
+          const response = await fetch(`${base_url}${endpoint}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              providerName: user?.externalAccounts?.[0]?.provider,
               fullName: user?.fullName,
               email: user?.emailAddresses[0].emailAddress,
+              imageUrl:user?.imageUrl,
+              providerInfo:{
+                providerName: user?.externalAccounts?.[0]?.provider,
+                providerId:userId
+              }
             }),
           });
 
           const data = await response.json();
-          // console.log("Response status:", response.status); //for checking response status
-          // console.log("Response body:", data); //for checking response body
+          console.log("Response status:", response); //for checking response status
+          console.log("Response body:", data); //for checking response body
           const token = data.data?.token;
 
           if (response.status === 201 && token) {
@@ -99,7 +107,7 @@ export default function Page() {
     };
 
     handleSignIn();
-  }, [isSignedIn, router, user]);
+  }, [isSignedIn, router, user, userId]);
 
   return (
     <SafeAreaView style={styles.scrollContainer}>

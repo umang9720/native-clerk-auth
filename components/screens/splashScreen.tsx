@@ -27,7 +27,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
     <View style={styles.container}>
       <Image
   source={require('@/assets/images/splash_icon.png')}
-  style={{ width: 200, height: 200 }}
+  style={{ width: 100, height: 100, marginBottom:15 }}
 />
 
 
@@ -46,14 +46,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: width * 0.08,
-    fontWeight: 'bold',
+    fontWeight:"semibold",
     color: '#000',
     marginBottom: height * 0.01,
-  },
-  subtitle: {
-    fontSize: width * 0.03,
-    color: '#5E5E5E',
-    fontWeight: '300',
   },
 });
 
