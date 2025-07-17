@@ -86,7 +86,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onOnboardingComplet
               </TouchableOpacity>
               
               <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-                 <Ionicons name="arrow-back" size={24} color="#6B7280" />
+                 <Ionicons name="arrow-forward" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
           )}

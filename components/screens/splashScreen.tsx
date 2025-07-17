@@ -29,7 +29,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
         source={require("@/assets/images/splash_icon.png")}
         style={{ width: 80, height: 80, marginBottom: 15 }}
       />
-      <StatusBar barStyle="light-content" backgroundColor="#F0C0BE" />
+      <StatusBar barStyle="light-content"/>
       <Text style={styles.title}>Good Breach</Text>
     </View>
   );

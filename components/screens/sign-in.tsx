@@ -67,7 +67,7 @@ export default function Page() {
         console.log("User email:", user?.emailAddresses[0].emailAddress); //for checking user mail
         console.log("User fullname:", user?.fullName); //for checking user full name
         console.log("your provider:", user?.externalAccounts?.[0]?.provider); //for checking user provider either google or apple
-        router.push("/(tabs)");
+        router.push("/signup/signUp");
 
         try {
           console.log("full api", base_url+endpoint)

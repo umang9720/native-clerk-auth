@@ -5,6 +5,7 @@ import OnboardingScreen from '@/components/screens/onBoardingScreen';
 import LoginScreen from '@/components/screens/sign-in';
 // import MainApp from '@/app/component/BottomTabNavigator';
 import { getOnboardingStatus } from '@/utils/asyncStorage';
+// import SignUp from '@/components/screens/signup/signUp';
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
