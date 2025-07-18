@@ -114,14 +114,14 @@ const CreateGoal = () => {
         </ScrollView>
 
         <View style={styles.inputContainer}>
-          <Text>Goal Name</Text>
+          <Text style={{marginRight:"70%",}}>Goal Name</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. Europe Trip"
             value={goalName}
             onChangeText={setGoalName}
           />
-          <Text>Goal Amount (£)</Text>
+          <Text style={{marginRight:"60%", marginTop:10,}}>Goal Amount (£)</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. 200"

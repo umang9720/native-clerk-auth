@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { goalImageMap } from "./goalsMap";
+import { router } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 const wp = (percentage: number) => (width * percentage) / 100;
@@ -18,7 +19,8 @@ export const ActiveGoalsList = ({ goals = [] }: { goals: any[] }) => {
         const emoji = goalImageMap[imageKey] || "🎯";
 
         return (
-          <View key={idx} style={styles.goalCard}>
+          <TouchableOpacity key={idx} style={styles.goalCard} onPress={() => router.push("/previewGoal/previewGoal")}>
+
             <View style={styles.goalHeader}>
               <Text style={styles.goalEmoji}>{emoji}</Text>
               <Text style={styles.goalTitle}>
@@ -56,7 +58,8 @@ export const ActiveGoalsList = ({ goals = [] }: { goals: any[] }) => {
                 Saved: £{(goal.savedAmount ?? 0).toFixed(2)}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
+          
         );
       })}
     </>

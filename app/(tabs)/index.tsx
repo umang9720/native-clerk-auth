@@ -126,7 +126,7 @@ export default function Index() {
         {/* Active Goals Title */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Active Goals</Text>
+            <Text style={styles.sectionTitle}>Active Goals</Text>
           </View>
         </View>
       </View>
