@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "GoodBreach",
+    "slug": "bbbj",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android", "ios"],
+    "owner": "souravsharma05",
+    "icon": "./assets/images/icon.png",
+    "scheme": "bbbj",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goodbreach.goodbreach"
+    },
+    "android": {
+      "versionCode": 11,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.goodbreach.goodbreach"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c197bcf6-d1ce-4243-baec-dce3d12eda16"
+      },
+      "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZGFzaGluZy1zdHVkLTYzLmNsZXJrLmFjY291bnRzLmRldiQ"
+    }
+  }
+}
