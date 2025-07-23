@@ -10,6 +10,7 @@ import {
   Image,
   useWindowDimensions,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -39,7 +40,9 @@ export default function Page() {
   const { user } = useUser();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStrategy, setLoadingStrategy] = useState<null | "oauth_google" | "oauth_apple">(null);
+  const [loadingStrategy, setLoadingStrategy] = useState<
+    null | "oauth_google" | "oauth_apple"
+  >(null);
   const [showContent, setShowContent] = useState(false); // <-- control rendering
 
   const handleLogin = useCallback(
@@ -79,14 +82,14 @@ export default function Page() {
 
   useEffect(() => {
     const checkAuthAndSignIn = async () => {
-      const existingToken = await getAuthToken();
+      const existingToken = await getAuthToken("user");
 
       if (existingToken) {
         // Token exists → redirect immediately
         Toast.show({
           type: "success",
-          text1: "Already Signed In",
-          text2: "Redirecting...",
+          text1: "Welcome Back! Master",
+          visibilityTime: 1000, // ⏱ Show for 1 second
         });
         router.replace("/(tabs)");
         return;
@@ -124,7 +127,7 @@ export default function Page() {
           Toast.show({
             type: "success",
             text1: "Login Successful",
-            text2: "Redirecting...",
+            visibilityTime: 1300, // ⏱ Show for 1 second
           });
 
           router.replace("/signup/signUp");
@@ -170,7 +173,10 @@ export default function Page() {
 
           <Image
             source={require("@/assets/images/logn_image.png")}
-            style={[styles.loginImage, { width: width * 0.8, height: width * 0.8 }]}
+            style={[
+              styles.loginImage,
+              { width: width * 0.8, height: width * 0.8 },
+            ]}
             resizeMode="contain"
           />
 
@@ -199,28 +205,30 @@ export default function Page() {
           </TouchableOpacity>
 
           {/* Apple Button */}
-          <TouchableOpacity
-            style={[
-              styles.button,
-              {
-                backgroundColor:
-                  loadingStrategy === "oauth_apple" ? "#A1E6B4" : "#004110",
-                width: width * 0.85,
-              },
-            ]}
-            onPress={() => handleLogin("oauth_apple")}
-            disabled={isLoading}
-          >
-            <Image
-              source={require("@/assets/images/logo_apple.png")}
-              style={styles.logo}
-            />
-            <Text style={styles.buttonText}>
-              {loadingStrategy === "oauth_apple"
-                ? "Signing in..."
-                : "Continue with Apple"}
-            </Text>
-          </TouchableOpacity>
+          {Platform.OS === "ios" && (
+            <TouchableOpacity
+              style={[
+                styles.button,
+                {
+                  backgroundColor:
+                    loadingStrategy === "oauth_apple" ? "#A1E6B4" : "#004110",
+                  width: width * 0.85,
+                },
+              ]}
+              onPress={() => handleLogin("oauth_apple")}
+              disabled={isLoading}
+            >
+              <Image
+                source={require("@/assets/images/logo_apple.png")}
+                style={styles.logo}
+              />
+              <Text style={styles.buttonText}>
+                {loadingStrategy === "oauth_apple"
+                  ? "Signing in..."
+                  : "Continue with Apple"}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <Text style={styles.endText}>
             By continuing, you agree to our Privacy and Terms.

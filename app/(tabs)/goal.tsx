@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Platform
 } from "react-native";
 // import { FontAwesome5 } from "@expo/vector-icons";
 import { ProgressBar } from "react-native-paper";
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
 import { useIsFocused } from "@react-navigation/native"; // if needed
+
 
 Dimensions.get("window");
 
@@ -157,14 +159,15 @@ const SmartGoalsScreen = () => {
           </Text>
         )}
 
-        {/* Floating Action Button */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push("/goal/createGoal")}
-        >
-          <Text style={styles.fabIcon}>＋</Text>
-        </TouchableOpacity>
+       
       </ScrollView>
+      {/* Fixed Floating Button */}
+      <TouchableOpacity
+        style={styles.fabFixed}
+        onPress={() => router.push("/goal/createGoal")}
+      >
+        <Text style={styles.fabIcon}>＋</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -334,4 +337,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
+  fabFixed: {
+  position: "absolute",
+ bottom: Platform.OS === "ios" ? "15%" : "12%",
+  right: 24,
+  backgroundColor: "#389F61",
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  alignItems: "center",
+  justifyContent: "center",
+  elevation: 6,
+  zIndex: 10,
+},
+
 });

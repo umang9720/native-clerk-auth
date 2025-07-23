@@ -147,9 +147,9 @@ const GoalPreview = () => {
 
         <TouchableOpacity
           style={styles.greenBtn}
-          onPress={() => router.push("/previewGoal/withdraw")}
+          onPress={() => router.push("/(tabs)/save")}
         >
-          <Text style={styles.greenBtnText}>Withdraw</Text>
+          <Text style={styles.greenBtnText}>Add Savings</Text>
         </TouchableOpacity>
 
         {/* Delete Modal */}

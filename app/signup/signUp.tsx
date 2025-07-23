@@ -11,6 +11,7 @@ import {
   Switch,
   KeyboardAvoidingView,
   Platform,
+  InteractionManager,
 } from "react-native";
 import ProgressBar from "./components/progressBar";
 import MultiSelectButton from "./components/multiSelectButton";
@@ -18,6 +19,7 @@ import { base_url } from "@/config/url";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getAuthToken } from "@/utils/authToken";
 import { router } from "expo-router";
+import Toast from "react-native-toast-message";
 
 const { width: screenWidth } = Dimensions.get("window");
 const TOTAL_STEPS = 6;
@@ -31,7 +33,6 @@ const SignUp = () => {
   const [spendOn, setSpendOn] = useState<string[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<string[]>([]);
   const [customGoal, setCustomGoal] = useState("");
- 
 
   const handleSelect = (item: string, list: string[], setList: any) => {
     setList(
@@ -43,95 +44,147 @@ const SignUp = () => {
   const skip = () => next();
 
   const handleSubmit = async () => {
-   const payload = {
-  isstudent: isStudent,
-  studentId: email,
-  ageRange: ageRange,
-  lifestyleInterests: lifestyle,
-  spendMostOn: spendOn,
-  savings_goals: [...savingsGoals, customGoal].filter(Boolean),
-  preferences: {
-    trackGoalCompletion: false,
-    seeHowOthersSave: false,
-    shareStreaksChallenges: false,
-    pushNotification: false,
-    emailReminder: false,
-    goalAlerts: false,
-  },
-};
+    const payload = {
+      isstudent: isStudent,
+      studentId: email,
+      ageRange: ageRange,
+      lifestyleInterests: lifestyle,
+      spendMostOn: spendOn,
+      savings_goals: [...savingsGoals, customGoal].filter(Boolean),
+      preferences: {
+        trackGoalCompletion: false,
+        seeHowOthersSave: false,
+        shareStreaksChallenges: false,
+        pushNotification: false,
+        emailReminder: false,
+        goalAlerts: false,
+      },
+    };
 
+    try {
+      const token = await getAuthToken("user");
 
+      const response = await fetch(`${base_url}/create/user`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "form-data",
+        },
+        body: JSON.stringify(payload),
+      });
 
- try {
-      const token = await getAuthToken();
-  
-  const response = await fetch(`${base_url}/create/user`, {
-    method: "PATCH",
-    headers: {
-        Authorization: `Bearer ${token}`,
-      "Content-Type": "form-data",
-    },
-    body: JSON.stringify(payload),
-  });
+      if (!response.ok) {
+        const errorText = await response.text(); // 🔍 read server error
+        console.error("Backend error:", errorText);
+        throw new Error(`Submission failed: ${response.status}`);
+      }
 
-  if (!response.ok) {
-    const errorText = await response.text(); // 🔍 read server error
-    console.error("Backend error:", errorText);
-    throw new Error(`Submission failed: ${response.status}`);
-  }
-
-  alert("SignUp Complete!");
-        router.push("/(tabs)");
-
-} catch (error) {
-  console.error("Submit error:", error); // 🛠 log real error
-  alert("Something went wrong.");
-}
-
-
+      Toast.show({
+               type: "success",
+               text1: "SignUp Completed",
+               visibilityTime: 1000, // ⏱ Show for 1 second
+             });
+     
+             InteractionManager.runAfterInteractions(() => {
+               setTimeout(() => {
+                 router.push("/(tabs)");
+               }, 1200);
+             });
+    } catch (error) {
+      console.error("Submit error:", error); // 🛠 log real error
+       Toast.show({
+               type: "error",
+               text1: "Something Went w=Wrong",
+               visibilityTime: 1000, // ⏱ Show for 1 second
+             });
+     
+             InteractionManager.runAfterInteractions(() => {
+               setTimeout(() => {
+                 router.push("/signup/signUp");
+               }, 1200);
+             });
+    }
   };
 
   const getBottomBarConfig = () => {
-  switch (step) {
-    case 1:
-      return {
-        show: true,
-        continueText: "Start Saving Smarter",
-        showSkip: true,
-        onPress: next,
-      };
-    case 2:
-    case 3:
-    case 4:
-      return {
-        show: true,
-        continueText: "Continue",
-        showSkip: true,
-        onPress: next,
-      };
-    case 5:
-      return {
-        show: true,
-        continueText: "Connect via TrueLayer",
-        showSkip: true,
-        onPress: next,
-      };
-    case 6:
-      return {
-        show: true,
-        continueText: "Let's Start",
-        showSkip: false,
-        onPress: handleSubmit,
-      };
-    default:
-      return {
-        show: true,
-        continueText: "Continue",
-        showSkip: true,
-        onPress: next,
-      };
-  }
-};
+    switch (step) {
+      case 2:
+        return {
+          show: true,
+          continueText: "Continue",
+          showSkip: true,
+          onPress: () => {
+            if (!ageRange) {
+              Toast.show({
+                type: "error",
+                text1: "Please select your age range",
+              });
+              return;
+            }
+            next();
+          },
+        };
+
+      case 3:
+        return {
+          show: true,
+          continueText: "Continue",
+          showSkip: true,
+          onPress: () => {
+            if (lifestyle.length === 0 || spendOn.length === 0) {
+              Toast.show({
+                type: "error",
+                text1:
+                  "Select at least one lifestyle and one spending category",
+              });
+              return;
+            }
+            next();
+          },
+        };
+
+      case 4:
+        return {
+          show: true,
+          continueText: "Continue",
+          showSkip: true,
+          onPress: () => {
+            if (savingsGoals.length === 0 && !customGoal.trim()) {
+              Toast.show({
+                type: "error",
+                text1: "Select or enter at least one savings goal",
+              });
+              return;
+            }
+            next();
+          },
+        };
+
+      case 5:
+        return {
+          show: true,
+          continueText: "Connect via TrueLayer",
+          showSkip: true,
+          onPress: next,
+        };
+
+      case 6:
+        return {
+          show: true,
+          continueText: "Let's Start",
+          showSkip: false,
+          onPress: handleSubmit,
+        };
+
+      default:
+        return {
+          show: true,
+          continueText: "Continue",
+          showSkip: true,
+          onPress: next,
+        };
+    }
+  };
 
   const renderStep = () => {
     switch (step) {
@@ -140,7 +193,10 @@ const SignUp = () => {
           <View style={styles.page}>
             <Image
               source={require("@/assets/images/signUp.png")}
-              style={[styles.loginImage, { width: screenWidth * 0.8, height: screenWidth * 0.8 }]}
+              style={[
+                styles.loginImage,
+                { width: screenWidth * 0.8, height: screenWidth * 0.8 },
+              ]}
               resizeMode="contain"
             />
             <Text style={styles.title}>
@@ -170,13 +226,12 @@ const SignUp = () => {
                   We&apos;ll suggest student-friendly goals
                 </Text>
               </View>
-<Switch
-  value={isStudent}
-  onValueChange={setIsStudent}
-  trackColor={{ false: "#E5E5E5", true: "#4CAF50" }}
-  thumbColor="#FFFFFF"
-/>
-
+              <Switch
+                value={isStudent}
+                onValueChange={setIsStudent}
+                trackColor={{ false: "#E5E5E5", true: "#4CAF50" }}
+                thumbColor="#FFFFFF"
+              />
             </View>
             {/* <TouchableOpacity onPress={() => setIsStudent(!isStudent)}>
               <Text style={[styles.toggleText, isStudent && { color: "green" }]}>
@@ -213,7 +268,6 @@ const SignUp = () => {
                 />
               ))}
             </View>
- 
           </View>
         );
 
@@ -231,7 +285,14 @@ const SignUp = () => {
               <Text style={styles.lifeContainerText}> (select up to 3)</Text>
             </View>
             <View style={styles.buttonRow}>
-              {["Fitness", "Travel", "Charity", "Shopping", "Food & Dining", "Technology"].map((item) => (
+              {[
+                "Fitness",
+                "Travel",
+                "Charity",
+                "Shopping",
+                "Food & Dining",
+                "Technology",
+              ].map((item) => (
                 <MultiSelectButton
                   key={item}
                   label={item}
@@ -245,7 +306,14 @@ const SignUp = () => {
               <Text style={styles.label}>What do you spend on most?</Text>
             </View>
             <View style={styles.buttonRow}>
-              {["Takeout", "Coffee", "RideShare", "Clothes", "Subscriptions", "Groceries"].map((item) => (
+              {[
+                "Takeout",
+                "Coffee",
+                "RideShare",
+                "Clothes",
+                "Subscriptions",
+                "Groceries",
+              ].map((item) => (
                 <MultiSelectButton
                   key={item}
                   label={item}
@@ -255,7 +323,6 @@ const SignUp = () => {
                 />
               ))}
             </View>
-            
           </View>
         );
 
@@ -267,12 +334,20 @@ const SignUp = () => {
               <Text>Choose goals that excite you</Text>
             </View>
             <View style={styles.verticalButtonColumn}>
-              {["New Gear", "Trip", "Running Shoes", "Charity", "Calm Yo Crisis Cash"].map((goal) => (
+              {[
+                "New Gear",
+                "Trip",
+                "Running Shoes",
+                "Charity",
+                "Calm Yo Crisis Cash",
+              ].map((goal) => (
                 <MultiSelectButton
                   key={goal}
                   label={goal}
                   selected={savingsGoals.includes(goal)}
-                  onPress={() => handleSelect(goal, savingsGoals, setSavingsGoals)}
+                  onPress={() =>
+                    handleSelect(goal, savingsGoals, setSavingsGoals)
+                  }
                   style={styles.multiSelectFullWidth}
                 />
               ))}
@@ -283,7 +358,6 @@ const SignUp = () => {
               value={customGoal}
               onChangeText={setCustomGoal}
             />
-            
           </View>
         );
 
@@ -291,26 +365,40 @@ const SignUp = () => {
         return (
           <View style={styles.page}>
             <View style={styles.bankContainer}>
-              <Text style={styles.bankContainerTitle}>Get real insights by connecting your bank</Text>
+              <Text style={styles.bankContainerTitle}>
+                Get real insights by connecting your bank
+              </Text>
               <Text style={styles.bankContainerSubTitle}>
-                Track expenses and unlock savings tips based on your real spending.
+                Track expenses and unlock savings tips based on your real
+                spending.
               </Text>
             </View>
             <View style={styles.bankContainerBox}>
-              <Image source={require("@/assets/images/bank1.png")} style={styles.bankImage} resizeMode="contain" />
+              <Image
+                source={require("@/assets/images/bank1.png")}
+                style={styles.bankImage}
+                resizeMode="contain"
+              />
               <View style={styles.bankTexeWrapper}>
                 <Text style={styles.label}>Automatic expense tracking</Text>
-                <Text style={styles.bankText}>See where your money goes without manual entry</Text>
+                <Text style={styles.bankText}>
+                  See where your money goes without manual entry
+                </Text>
               </View>
             </View>
             <View style={styles.bankContainerBox}>
-              <Image source={require("@/assets/images/bank2.png")} style={styles.bankImage} resizeMode="contain" />
+              <Image
+                source={require("@/assets/images/bank2.png")}
+                style={styles.bankImage}
+                resizeMode="contain"
+              />
               <View style={styles.bankTexeWrapper}>
                 <Text style={styles.label}>Personalized saving tips</Text>
-                <Text style={styles.bankText}>Get suggestions based on your actual spending patterns</Text>
+                <Text style={styles.bankText}>
+                  Get suggestions based on your actual spending patterns
+                </Text>
               </View>
             </View>
-            
           </View>
         );
 
@@ -323,7 +411,9 @@ const SignUp = () => {
               resizeMode="contain"
             />
             <Text style={styles.title}>You&apos;re in control!</Text>
-            <Text>Here&apos;s what you&apos;ve shared and how we&apos;ll use it</Text>
+            <Text>
+              Here&apos;s what you&apos;ve shared and how we&apos;ll use it
+            </Text>
             {/* <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>Let&apos;s Start</Text>
             </TouchableOpacity> */}
@@ -332,41 +422,41 @@ const SignUp = () => {
     }
   };
 
-const { show, continueText, showSkip, onPress } = getBottomBarConfig();
+  const { show, continueText, showSkip, onPress } = getBottomBarConfig();
 
-return (
-  <SafeAreaView style={{ flex: 1 }}>
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-    >
-      <View style={{ flex: 1 }}>
-        <ProgressBar step={step} totalSteps={TOTAL_STEPS} />
-        <ScrollView contentContainerStyle={styles.container}>
-          {renderStep()}
-        </ScrollView>
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      >
+        <View style={{ flex: 1 }}>
+          <ProgressBar step={step} totalSteps={TOTAL_STEPS} />
+          <ScrollView contentContainerStyle={styles.container}>
+            {renderStep()}
+          </ScrollView>
 
-        {show && (
-          <View style={styles.bottomGreenBar}>
-            <TouchableOpacity
-              style={styles.bottomContinueButton}
-              onPress={onPress}
-            >
-              <Text style={styles.buttonText}>{continueText}</Text>
-            </TouchableOpacity>
-
-            {showSkip && (
-              <TouchableOpacity onPress={skip}>
-                <Text style={styles.skipText}>Skip →</Text>
+          {show && (
+            <View style={styles.bottomGreenBar}>
+              <TouchableOpacity
+                style={styles.bottomContinueButton}
+                onPress={onPress}
+              >
+                <Text style={styles.buttonText}>{continueText}</Text>
               </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
-    </KeyboardAvoidingView>
-  </SafeAreaView>
-);
+
+              {showSkip && (
+                <TouchableOpacity onPress={skip}>
+                  <Text style={styles.skipText}>Skip →</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -462,7 +552,7 @@ const styles = StyleSheet.create({
   },
   ageContainer: {
     flexDirection: "row",
-    marginTop:20,
+    marginTop: 20,
     marginBottom: 10,
     width: "100%",
     justifyContent: "space-between",
@@ -552,7 +642,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
   },
- page2Title: {
+  page2Title: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#181619",
@@ -565,28 +655,26 @@ const styles = StyleSheet.create({
     width: 300,
   },
   bottomGreenBar: {
-  position: "absolute",
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: "#12211B",
-  paddingVertical: 20,
-  paddingHorizontal: 20,
-  borderTopLeftRadius: 16,
-  borderTopRightRadius: 16,
-  alignItems: "center",
-},
-bottomContinueButton: {
-  backgroundColor: "#54C381",
-  width: "100%",
-  height: 50,
-  borderRadius: 8,
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 10,
-},
-
-
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#12211B",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    alignItems: "center",
+  },
+  bottomContinueButton: {
+    backgroundColor: "#54C381",
+    width: "100%",
+    height: 50,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
 });
 
 export default SignUp;

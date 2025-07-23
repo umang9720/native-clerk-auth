@@ -14,6 +14,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Calendar } from "react-native-calendars";
+import moment from "moment"; // Optional, helps with formatting
 
 const { width } = Dimensions.get("window");
 const cardSize = width * 0.25;
@@ -24,16 +27,47 @@ const CreateGoal = () => {
   const [goalAmount, setGoalAmount] = useState("");
   const [durationInDate, setDurationInDate] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [isPickingStart, setIsPickingStart] = useState(true);
+  const [customCalendarVisible, setCustomCalendarVisible] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<"start" | "end">("start");
 
   const goalTypes = [
     { type: "trip", emoji: "🧳", label: "Trip", image: "trip.jpg" },
     { type: "laptop", emoji: "💻", label: "Laptop", image: "laptop.jpg" },
-    { type: "college fee", emoji: "🎓", label: "College Fee", image: "college.jpg" },
+    {
+      type: "college fee",
+      emoji: "🎓",
+      label: "College Fee",
+      image: "college.jpg",
+    },
     { type: "game", emoji: "🎮", label: "Game", image: "game.jpg" },
-    { type: "future savings", emoji: "💰", label: "Future Savings", image: "future.jpg" },
-    { type: "emergency funds", emoji: "🛡️", label: "Emergency Funds", image: "emergency.jpg" },
-    { type: "electronics", emoji: "📱", label: "Electronics", image: "electronics.jpg" },
-    { type: "accessories", emoji: "👜", label: "Accessories", image: "accessories.jpg" },
+    {
+      type: "future savings",
+      emoji: "💰",
+      label: "Future Savings",
+      image: "future.jpg",
+    },
+    {
+      type: "emergency funds",
+      emoji: "🛡️",
+      label: "Emergency Funds",
+      image: "emergency.jpg",
+    },
+    {
+      type: "electronics",
+      emoji: "📱",
+      label: "Electronics",
+      image: "electronics.jpg",
+    },
+    {
+      type: "accessories",
+      emoji: "👜",
+      label: "Accessories",
+      image: "accessories.jpg",
+    },
   ];
 
   const getFutureDate = (days: string): string => {
@@ -46,46 +80,118 @@ const CreateGoal = () => {
     return `${dayStr}-${monthStr}-${year}`;
   };
 
-  const handleCreateGoal = async () => {
-    if (!goalName || !goalAmount || !durationInDate || !selectedType) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
-    }
+ const handleCreateGoal = async () => {
+  // Close calendar if it's still open
+  if (customCalendarVisible) {
+    setCustomCalendarVisible(false);
+  }
 
-    const selectedGoal = goalTypes.find((g) => g.type === selectedType);
-    const goalImage = selectedGoal?.image || "default.jpg";
-    const token = await getAuthToken();
+  if (!goalName || !goalAmount || !durationInDate || !selectedType) {
+    Alert.alert("Error", "Please fill in all fields");
+    return;
+  }
 
-    const response = await fetch(`${base_url}/create/goal`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+  const selectedGoal = goalTypes.find((g) => g.type === selectedType);
+  const goalImage = selectedGoal?.image || "default.jpg";
+  const token = await getAuthToken("user");
+
+  const response = await fetch(`${base_url}/create/goal`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      goalImage,
+      goalName,
+      goalAmount: parseFloat(goalAmount),
+      durationInDate: getFutureDate(durationInDate),
+      reward: {
+        name: "Laptop Bag",
+        description: "Get a stylish laptop bag on goal completion.",
+        imageUrl: "laptop-bag.jpg",
       },
-      body: JSON.stringify({
-        goalImage,
-        goalName,
-        goalAmount: parseFloat(goalAmount),
-        durationInDate: getFutureDate(durationInDate),
-        reward: {
-          name: "Laptop Bag",
-          description: "Get a stylish laptop bag on goal completion.",
-          imageUrl: "laptop-bag.jpg",
-        },
-      }),
-    });
+    }),
+  });
 
-    const data = await response.json();
-    if (response.status === 201 && data?.data?.id) {
-      setShowSuccessModal(true);
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        router.push({ pathname: "/goal/SavingMethod", params: { goalId: data.data.id } });
-      }, 3000);
-    } else {
-      Alert.alert("Error", "Failed to create goal");
-    }
+  const data = await response.json();
+
+  if (response.status === 201 && data?.data?.id) {
+    setShowSuccessModal(true);
+    setTimeout(() => {
+      setShowSuccessModal(false);
+      router.push({ pathname: "/goal/SavingMethod", params: { goalId: data.data.id } });
+    }, 3000);
+  } else {
+    Alert.alert("Error", "Failed to create goal");
+  }
+};
+
+
+  const calculateDaysBetween = (start: Date, end: Date): number => {
+    const timeDiff = end.getTime() - start.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
   };
+
+  const getMarkedDates = (start: Date | null, end: Date | null) => {
+  if (!start) return {};
+
+  const marked: any = {};
+  const startStr = moment(start).format('YYYY-MM-DD');
+
+  if (!end) {
+    marked[startStr] = { startingDay: true, endingDay: true, color: '#10B981', textColor: '#fff' };
+    return marked;
+  }
+
+  const endStr = moment(end).format('YYYY-MM-DD');
+  let curr = moment(start);
+
+  while (curr.isSameOrBefore(end, 'day')) {
+    const currStr = curr.format('YYYY-MM-DD');
+    marked[currStr] = {
+      color: '#A7F3D0',
+      textColor: '#065F46',
+    };
+    curr = curr.add(1, 'day');
+  }
+
+  marked[startStr].startingDay = true;
+  marked[endStr].endingDay = true;
+  marked[startStr].color = marked[endStr].color = '#10B981';
+  marked[startStr].textColor = marked[endStr].textColor = '#fff';
+
+  return marked;
+};
+
+
+  {
+    showPicker && (
+      <DateTimePicker
+        value={new Date()}
+        mode="date"
+        display="default"
+        onChange={(event, selectedDate) => {
+          if (selectedDate) {
+            if (isPickingStart) {
+              setStartDate(selectedDate);
+              setIsPickingStart(false);
+              setShowPicker(true); // Show next picker
+            } else {
+              setEndDate(selectedDate);
+              const days = calculateDaysBetween(startDate!, selectedDate);
+              setDurationInDate(days.toString());
+              setIsPickingStart(true);
+              setShowPicker(false);
+            }
+          } else {
+            setShowPicker(false);
+            setIsPickingStart(true);
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -97,7 +203,11 @@ const CreateGoal = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.goalRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.goalRow}
+        >
           {goalTypes.map((goal) => (
             <TouchableOpacity
               key={goal.type}
@@ -114,14 +224,16 @@ const CreateGoal = () => {
         </ScrollView>
 
         <View style={styles.inputContainer}>
-          <Text style={{marginRight:"70%",}}>Goal Name</Text>
+          <Text style={{ marginRight: "70%" }}>Goal Name</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. Europe Trip"
             value={goalName}
             onChangeText={setGoalName}
           />
-          <Text style={{marginRight:"60%", marginTop:10,}}>Goal Amount (£)</Text>
+          <Text style={{ marginRight: "60%", marginTop: 10 }}>
+            Goal Amount (£)
+          </Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. 200"
@@ -140,7 +252,11 @@ const CreateGoal = () => {
                 styles.durationButton,
                 durationInDate === day && styles.durationButtonSelected,
               ]}
-              onPress={() => setDurationInDate(day)}
+              onPress={() => {
+                setDurationInDate(day);
+                setStartDate(null);
+                setEndDate(null);
+              }}
             >
               <Text
                 style={[
@@ -152,6 +268,35 @@ const CreateGoal = () => {
               </Text>
             </TouchableOpacity>
           ))}
+
+          {/* 👉 Custom Date Button */}
+          <TouchableOpacity
+            style={[
+              styles.durationButton,
+              startDate &&
+                endDate &&
+                durationInDate ===
+                  calculateDaysBetween(startDate, endDate).toString() &&
+                styles.durationButtonSelected,
+            ]}
+            onPress={() => {
+              setCalendarMode("start");
+              setCustomCalendarVisible(true);
+            }}
+          >
+            <Text
+              style={[
+                styles.durationText,
+                startDate &&
+                  endDate &&
+                  durationInDate ===
+                    calculateDaysBetween(startDate, endDate).toString() &&
+                  styles.durationTextSelected,
+              ]}
+            >
+              Custom
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {goalAmount && durationInDate && (
@@ -159,42 +304,126 @@ const CreateGoal = () => {
             <Text style={styles.greenBoxText}>
               Daily Savings Amount{" "}
               <Text style={styles.greenBoxHighlight}>
-                £{(parseFloat(goalAmount) / parseInt(durationInDate)).toFixed(2)}
+                £
+                {(parseFloat(goalAmount) / parseInt(durationInDate)).toFixed(2)}
               </Text>{" "}
               to reach £{goalAmount} in {durationInDate} days.
             </Text>
           </View>
         )}
 
-        <TouchableOpacity style={styles.createButton} onPress={handleCreateGoal}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={handleCreateGoal}
+        >
           <Text style={styles.createButtonText}>Create Goal</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {showSuccessModal && (
-        <View style={styles.successOverlay}>
-          <View style={styles.successPopup}>
-            <Ionicons name="checkmark-circle" size={64} color="#10B981" />
-            <Text style={styles.successTitle}>You did it!</Text>
-            <Text style={styles.successSubtitle}>You&apos;ve created your goal.</Text>
-            <Text style={{ marginTop: 10 }}>Redirecting in 3 sec...</Text>
-          </View>
-        </View>
-      )}
+     {showPicker && (
+  <DateTimePicker
+    value={new Date()}
+    mode="date"
+    display="default"
+    onChange={(event, selectedDate) => {
+      if (selectedDate) {
+        if (isPickingStart) {
+          setStartDate(selectedDate);
+          setIsPickingStart(false);
+          setShowPicker(true); // Show end picker next
+        } else {
+          setEndDate(selectedDate);
+          if (startDate) {
+            const days = calculateDaysBetween(startDate, selectedDate);
+            setDurationInDate(days.toString());
+          }
+          setIsPickingStart(true);
+          setShowPicker(false);
+        }
+      } else {
+        // User cancelled picker
+        setShowPicker(false);
+        setIsPickingStart(true);
+      }
+    }}
+  />
+)}
+
+{showSuccessModal && (
+  <View style={styles.successOverlay}>
+    <View style={styles.successPopup}>
+      <Ionicons name="checkmark-circle" size={64} color="#10B981" />
+      <Text style={styles.successTitle}>You did it!</Text>
+      <Text style={styles.successSubtitle}>You&apos;ve created your goal.</Text>
+      <Text style={{ marginTop: 10 }}>Redirecting in 3 sec...</Text>
+    </View>
+  </View>
+)}
+
+
+ {customCalendarVisible && (
+  <View style={styles.calendarOverlay}>
+    <View style={styles.calendarContainer}>
+      <Text style={styles.calendarTitle}>
+        {calendarMode === "start" ? "Choose Start Date" : "Choose End Date"}
+      </Text>
+
+      <Calendar
+        current={new Date().toISOString().split("T")[0]}
+        onDayPress={(day) => {
+          const selected = new Date(day.dateString);
+
+          if (calendarMode === "start") {
+            setStartDate(selected);
+            setCalendarMode("end");
+          } else {
+            setEndDate(selected);
+            const diff = calculateDaysBetween(startDate!, selected);
+            setDurationInDate(diff.toString());
+            setCustomCalendarVisible(false);
+            setCalendarMode("start");
+          }
+        }}
+        markingType={'period'}
+        markedDates={getMarkedDates(startDate, endDate)}
+        theme={{
+          backgroundColor: '#ffffff',
+          calendarBackground: '#ffffff',
+          textSectionTitleColor: '#b6c1cd',
+          selectedDayBackgroundColor: '#10B981',
+          selectedDayTextColor: '#ffffff',
+          todayTextColor: '#10B981',
+          dayTextColor: '#2d4150',
+          textDisabledColor: '#d9e1e8',
+          dotColor: '#10B981',
+          arrowColor: '#10B981',
+        }}
+      />
+
+      <TouchableOpacity
+        onPress={() => {
+          setCustomCalendarVisible(false);
+          setCalendarMode("start");
+        }}
+        style={{ marginTop: 20 }}
+      >
+        <Text style={{ color: "red", fontWeight: "600" }}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+
     </SafeAreaView>
   );
 };
 
 export default CreateGoal;
 
-// ...Styles remain unchanged but include `successOverlay` and `successPopup` as provided earlier
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
- header: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 15,
@@ -345,7 +574,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  successOverlay: {
+
+  successPopup: {
+    backgroundColor: "#fff",
+    padding: 30,
+    borderRadius: 12,
+    alignItems: "center",
+    width: "80%",
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 10,
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: "#6B7280",
+    marginTop: 5,
+    textAlign: "center",
+  },
+ successOverlay: {
   position: "absolute",
   top: 0,
   left: 0,
@@ -354,26 +602,37 @@ const styles = StyleSheet.create({
   backgroundColor: "rgba(0, 0, 0, 0.5)",
   justifyContent: "center",
   alignItems: "center",
-  zIndex: 1000,
+  zIndex: 3000, // Ensure it's above calendar
 },
-successPopup: {
-  backgroundColor: "#fff",
-  padding: 30,
-  borderRadius: 12,
+
+calendarOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0,0,0,0.6)",
+  justifyContent: "center",
   alignItems: "center",
-  width: "80%",
+  zIndex: 2000, // Lower than successOverlay
 },
-successTitle: {
-  fontSize: 22,
+
+calendarContainer: {
+  backgroundColor: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  width: "90%",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  elevation: 5,
+},
+calendarTitle: {
+  fontSize: 18,
   fontWeight: "bold",
-  marginTop: 10,
-},
-successSubtitle: {
-  fontSize: 16,
-  color: "#6B7280",
-  marginTop: 5,
+  marginBottom: 10,
   textAlign: "center",
 },
 
 });
-
