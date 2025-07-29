@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
 
@@ -26,28 +26,28 @@ export default function SmartSavings() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchGoals = async () => {
-      try {
-        const token = await getAuthToken("user");
-        const response = await fetch(`${base_url}/goals/user`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+const fetchGoals = useCallback(async () => {
+  try {
+    const token = await getAuthToken("user");
+    const response = await fetch(`${base_url}/goals/user`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-        const result = await response.json();
-        const goalsData: Goal[] = result?.data?.data || [];
-        setGoals(goalsData);
-      } catch (error) {
-        console.error("Error fetching goals:", error);
-      }
-    };
+    const result = await response.json();
+    const goalsData: Goal[] = result?.data?.data || [];
+    setGoals(goalsData);
+  } catch (error) {
+    console.error("Error fetching goals:", error);
+  }
+}, []); // Empty deps if you don’t rely on other state/props
 
-    fetchGoals();
-  }, []);
+useEffect(() => {
+  fetchGoals();
+}, [fetchGoals]); // Called once on mount
 
   const handleSave = async (label: string, desc: string, value: number) => {
     if (!selectedGoalId) {
@@ -95,7 +95,7 @@ export default function SmartSavings() {
       ]}
       onPress={() => setSelectedGoalId(item.id)}
     >
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View style={styles.goalRow}>
         <Text
           style={[
             styles.goalText,
@@ -110,7 +110,6 @@ export default function SmartSavings() {
           }
           size={20}
           color={selectedGoalId === item.id ? "#fff" : "#6B7280"}
-          style={{ marginLeft: "70%" }}
         />
       </View>
     </TouchableOpacity>
@@ -233,7 +232,10 @@ export default function SmartSavings() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.customSaveBtn}  onPress={() => router.push('/save/customSave')}>
+            <TouchableOpacity
+              style={styles.customSaveBtn}
+              onPress={() => router.push("/save/customSave")}
+            >
               <Text style={styles.customSaveText}>＋ Custom Save</Text>
             </TouchableOpacity>
 
@@ -241,7 +243,7 @@ export default function SmartSavings() {
           </>
         }
         ListEmptyComponent={<Text style={styles.empty}>No goals found.</Text>}
-         contentContainerStyle={{ paddingBottom: 100}}
+        contentContainerStyle={{ paddingBottom: 100 }}
       />
     </SafeAreaView>
   );
@@ -311,7 +313,6 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     marginTop: 16,
     marginBottom: 16,
-
   },
   goalItem: {
     padding: 10,
@@ -320,7 +321,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f2f2",
     borderRadius: 6,
   },
-  goalText: { fontWeight: "500", color: "#374151" },
   empty: {
     marginTop: 20,
     fontStyle: "italic",
@@ -328,19 +328,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   goalOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignSelf:"center",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
     borderRadius: 12,
     marginBottom: 8,
     borderColor: "#E5E7EB",
     borderWidth: 1,
-    width:330,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    width: "90%", // responsive
+    alignSelf: "center",
+    backgroundColor: "#fff",
+  },
+
+  goalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  goalText: {
+    fontWeight: "500",
+    color: "#374151",
+    flexShrink: 1, // prevents overflow on long names
+  },
+
+  goalTextActive: {
+    color: "#fff",
   },
   goalActive: {
     backgroundColor: "#065F46",
   },
-  goalTextActive: { color: "#fff" },
 });

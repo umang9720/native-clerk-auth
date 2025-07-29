@@ -13,8 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
-import { fetchActiveGoals } from "@/utils/activeGoals";
+
 import Toast from "react-native-toast-message";
+import { useLocalSearchParams } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
@@ -27,21 +28,9 @@ const DepositScreen = () => {
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [selectedGoalId, setSelectedGoalId] = useState(null);
 
-  useEffect(() => {
-    const fetchAndSet = async () => {
-      const { activeGoals, selectedGoal, selectedGoalId } =
-        await fetchActiveGoals();
+  const { id } = useLocalSearchParams();
 
-      setGoals(activeGoals);
-      setSelectedGoal(selectedGoal);
-      setSelectedGoalId(selectedGoalId);
-
-      console.log("✅ Selected Goal:", selectedGoal);
-      console.log("✅ Selected Goal ID:", selectedGoalId);
-    };
-
-    fetchAndSet();
-  }, []);
+  console.log("Goal ID:", id); // this will log the passed ID
 
   // console.log("Selected goal:", selectedGoal);
   // console.log("Selected goal ID:", selectedGoalId);
@@ -57,7 +46,7 @@ const DepositScreen = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          goalId: selectedGoalId,
+          goalId:id,
           type: "deposit",
           title,
           amount: parseFloat(amount),
@@ -111,7 +100,7 @@ const DepositScreen = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          goalId: selectedGoalId,
+          goalId: id,
           title,
           type: "withdraw",
           amount: parseFloat(amount),
