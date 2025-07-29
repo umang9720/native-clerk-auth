@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { goalImageMap } from "./goalsMap";
 import { router } from "expo-router";
 
@@ -19,8 +25,16 @@ export const ActiveGoalsList = ({ goals = [] }: { goals: any[] }) => {
         const emoji = goalImageMap[imageKey] || "🎯";
 
         return (
-          <TouchableOpacity key={idx} style={styles.goalCard} onPress={() => router.push("/previewGoal/previewGoal")}>
-
+          <TouchableOpacity
+            key={idx}
+            style={styles.goalCard}
+            onPress={() =>
+              router.push({
+                pathname: "/previewGoal/previewGoal",
+                params: { goal: JSON.stringify(goal) },
+              })
+            }
+          >
             <View style={styles.goalHeader}>
               <Text style={styles.goalEmoji}>{emoji}</Text>
               <Text style={styles.goalTitle}>
@@ -59,7 +73,6 @@ export const ActiveGoalsList = ({ goals = [] }: { goals: any[] }) => {
               </Text>
             </View>
           </TouchableOpacity>
-          
         );
       })}
     </>
@@ -120,13 +133,12 @@ const styles = StyleSheet.create({
   },
 });
 
-
-
-
-   {/* <Text style={styles.goalStat}>
+{
+  /* <Text style={styles.goalStat}>
               Progress:{" "}
               {goal.goalAmount
                 ? Math.round(((goal.savedAmount ?? 0) / goal.goalAmount) * 100)
                 : 0}
               %
-            </Text> */}
+            </Text> */
+}

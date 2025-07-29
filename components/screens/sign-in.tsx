@@ -167,7 +167,7 @@ export default function Page() {
         <View style={[styles.container, { paddingHorizontal: width * 0.08 }]}>
           <View style={styles.textWrapper}>
             <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.title}>GoodBreach</Text>
+            <Text style={styles.title}>BuckUp</Text>
             <Text style={styles.subText}>Small Sacrifices, Big Rewards</Text>
           </View>
 

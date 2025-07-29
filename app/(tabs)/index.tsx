@@ -79,7 +79,7 @@ export default function Index() {
             source={require("@/assets/images/splash_icon.png")}
             style={styles.headerLeftIcon}
           />
-          <Text style={styles.headerText}>GoodBreach</Text>
+          <Text style={styles.headerText}>BuckUp</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconButton}>

@@ -86,7 +86,7 @@ const SavingMethod = () => {
         savingMethod,
       }),
     });
-
+console.log(response)
     if (response.ok) {
       router.push("/bank/ConnectBankPage");
     } else {
