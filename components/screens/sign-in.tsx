@@ -119,6 +119,8 @@ export default function Page() {
         });
 
         const data = await response.json();
+        console.log("Backend response:", data, response.status);
+
         const token = data?.data?.token;
 
         if (response.status === 201 && token) {

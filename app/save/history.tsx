@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -25,12 +25,13 @@ dayjs.extend(relativeTime);
 export default function Option1() {
   const [groupedSaves, setGroupedSaves] = useState([]);
 
-  useEffect(() => {
+  useEffect(
+    useCallback(() => {
     const fetchSaving = async () => {
       try {
         const token = await getAuthToken("user");
 
-        const response = await fetch(`${base_url}/saves/user`, {
+        const response = await fetch(`${base_url}/money/all`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -53,7 +54,8 @@ export default function Option1() {
     };
 
     fetchSaving();
-  }, []);
+  }, [])
+  );
 
   // 📦 Group saves by categories
   const groupByDateCategory = (data: any[]) => {
