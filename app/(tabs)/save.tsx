@@ -67,7 +67,7 @@ useEffect(() => {
     value: number
   ) => {
     try {
-      const response = await fetch(`${base_url}/create/save`, {
+      const response = await fetch(`${base_url}/money/sacrifice`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -76,6 +76,7 @@ useEffect(() => {
         body: JSON.stringify({
           goalId,
           title: label,
+          type:"sacrifice",
           description: desc,
           amount: value,
         }),
