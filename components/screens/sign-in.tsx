@@ -41,12 +41,12 @@ export default function Page() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStrategy, setLoadingStrategy] = useState<
-    null | "oauth_google" | "oauth_apple"
+    null | "oauth_google" | "oauth_apple"| "oauth_microsoft"
   >(null);
   const [showContent, setShowContent] = useState(false); // <-- control rendering
 
   const handleLogin = useCallback(
-    async (strategy: "oauth_google" | "oauth_apple") => {
+    async (strategy: "oauth_google" | "oauth_apple" | "oauth_microsoft") => {
       if (isLoading) return;
 
       try {
@@ -88,9 +88,10 @@ export default function Page() {
         // Token exists → redirect immediately
         Toast.show({
           type: "success",
-          text1: "Welcome Back! Master",
-          visibilityTime: 1000, // ⏱ Show for 1 second
+          text1: `Welcome Back! ${user?.fullName || "User"}`,
+          visibilityTime: 1000,
         });
+
         router.replace("/(tabs)");
         return;
       }
@@ -120,19 +121,39 @@ export default function Page() {
 
         const data = await response.json();
         console.log("Backend response:", data, response.status);
-
+        // console.log("login status--",data.data.type)
+        const type = data?.data?.type;
         const token = data?.data?.token;
 
-        if (response.status === 201 && token) {
+        //for checking if login type is login
+        if (response.status === 201 && token && type === "login") {
           await saveAuthToken(token);
 
           Toast.show({
             type: "success",
             text1: "Login Successful",
-            visibilityTime: 1300, // ⏱ Show for 1 second
+            visibilityTime: 1000,
+          });
+
+          router.replace("/(tabs)");
+        }
+        // for type = signUp
+        else if (response.status === 201 && token && type === "signup") {
+          await saveAuthToken(token);
+
+          Toast.show({
+            type: "success",
+            text1: "Login Successful",
+            visibilityTime: 1000,
           });
 
           router.replace("/signup/signUp");
+        } else if (response.status === 201 && !token) {
+          Toast.show({
+            type: "error",
+            text1: "Please SignUp First",
+            text2: data?.message,
+          });
         } else {
           Toast.show({
             type: "error",
@@ -205,7 +226,29 @@ export default function Page() {
                 : "Continue with Google"}
             </Text>
           </TouchableOpacity>
-
+{/* Microsoft Button */}
+ <TouchableOpacity
+            style={[
+              styles.button,
+              {
+                backgroundColor:
+                  loadingStrategy === "oauth_microsoft" ? "#A1E6B4" : "#004110",
+                width: width * 0.85,
+              },
+            ]}
+            onPress={() => handleLogin("oauth_microsoft")}
+            disabled={isLoading}
+          >
+            <Image
+              source={require("@/assets/images/logo_google.png")}
+              style={styles.logo}
+            />
+            <Text style={styles.buttonText}>
+              {loadingStrategy === "oauth_microsoft"
+                ? "Signing in..."
+                : "Continue with Microsoft"}
+            </Text>
+          </TouchableOpacity>
           {/* Apple Button */}
           {Platform.OS === "ios" && (
             <TouchableOpacity
