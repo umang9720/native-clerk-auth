@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import SplashScreen from './screens/splashScreen';
-import OnboardingScreen from './screens/onBoardingScreen';
-import LoginScreen from './screens/sign-in';
+import SplashScreen from '@/components/screens/splashScreen';
+import OnboardingScreen from '@/components/screens/onBoardingScreen';
+import LoginScreen from '@/components/screens/sign-in';
 // import MainApp from '@/app/component/BottomTabNavigator';
-import { getOnboardingStatus } from './utils/asyncStorage';
+import { getOnboardingStatus } from '@/utils/asyncStorage';
+// import SignUp from '@/components/screens/signup/signUp';
 
 const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +24,7 @@ const App: React.FC = () => {
       setOnboardingCompleted(completed);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error checking onboarding status:', error);
+      // console.error('Error checking onboarding status:', error);
       setIsLoading(false);
     }
   };

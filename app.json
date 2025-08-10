@@ -1,22 +1,45 @@
 {
   "expo": {
-    "name": "clerk",
-    "slug": "clerk",
-    "version": "1.0.0",
+    "name": "BuckUp",
+    "slug": "bbbj",
+    "version": "1.0.1",
     "orientation": "portrait",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "owner": "souravsharma05",
     "icon": "./assets/images/icon.png",
-    "scheme": "clerk",
+    "scheme": "bbbj",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "buildNumber": "5",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "androidapi.xombus.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.1"
+            }
+          }
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.buckup.buckup"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.buckup.buckup"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +60,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c197bcf6-d1ce-4243-baec-dce3d12eda16"
+      },
+      "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZGFzaGluZy1zdHVkLTYzLmNsZXJrLmFjY291bnRzLmRldiQ"
     }
   }
 }
