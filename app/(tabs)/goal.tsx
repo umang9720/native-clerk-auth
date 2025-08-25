@@ -1,96 +1,77 @@
 import {
-  View,
-  Text,
   StyleSheet,
-  Dimensions,
+  Text,
   TouchableOpacity,
-  ScrollView,
+  View,
   Image,
-  Platform
+  Dimensions,
+  ScrollView,
+  Platform,
 } from "react-native";
-// import { FontAwesome5 } from "@expo/vector-icons";
-import { ProgressBar } from "react-native-paper";
+import React, { useState, useEffect, useCallback } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { ActiveGoalsList } from "@/components/ActiveGoals/ActiveGoalList";
-import { useEffect, useState } from "react";
-import { getAuthToken } from "@/utils/authToken";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { goalImageMap } from "@/components/ActiveGoals/goalsMap";
+import { fetchGoals } from "@/utils/fetchgoals";
 import { base_url } from "@/config/url";
-import { useIsFocused } from "@react-navigation/native"; // if needed
+import { ProgressBar } from "react-native-paper";
+import { getAuthToken } from "@/utils/authToken";
 
+const { width, height } = Dimensions.get("window");
+const wp = (percentage: number) => (width * percentage) / 100;
+const hp = (percentage: number) => (height * percentage) / 100;
 
-Dimensions.get("window");
+const GoalScreen = () => {
+  const { goal } = useLocalSearchParams();
+  const selectedGoal = goal ? JSON.parse(goal as string) : null;
 
-const SmartGoalsScreen = () => {
-  const [activeGoals, setActiveGoals] = useState<any[]>([]);
-  const [completedGoals, setCompletedGoals] = useState<any[]>([]);
-  const [pausedGoals, setPausedGoals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true); 
+  const [mode, setMode] = useState<
+    "Active Goals" | "Paused Goals" | "Completed Goals"
+  >("Active Goals");
+  const [goals, setGoals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [walletData, setWalletData] = useState<any>(null);
-  const isFocused = useIsFocused();
 
-  useEffect(() => {
-    const fetchGoals = async () => {
-      try {
+  useFocusEffect(
+    useCallback(() => {
+      const loadGoals = async () => {
         setLoading(true);
-        const token = await getAuthToken("user");
-        if (!token) {
-          console.warn("User token not found");
-          setLoading(false);
-          return;
-        }
+        const data = await fetchGoals();
+        setGoals(data);
+        setLoading(false);
+      };
+      loadGoals();
+    }, [])
+  );
 
-        // --- Fetch Wallet Data ---
-        const fetchWalletData = async () => {
-          try {
-            const response = await fetch(`${base_url}/wallet/user`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            const json = await response.json();
-            setWalletData(json?.data?.data || null);
-          } catch (error) {
-            console.error("Error fetching wallet data", error);
-          }
-        };
-        await fetchWalletData();
-
-        // --- Fetch All Goals ---
-        const response = await fetch(`${base_url}/goals/user`, {
+  // --- Fetch Wallet Data ---
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      const token = await getAuthToken("user");
+      try {
+        const response = await fetch(`${base_url}/wallet/user`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
-
-        const data = await response.json();
-        const allGoals = Array.isArray(data?.data?.data) ? data.data.data.reverse() : [];
-
-        // --- Filter by Status ---
-        setActiveGoals(allGoals.filter((g: any) => g.status === "active"));
-        setCompletedGoals(allGoals.filter((g: any) => g.status === "complete"));
-        setPausedGoals(allGoals.filter((g: any) => g.status === "pause"));
-
+        const json = await response.json();
+        setWalletData(json?.data?.data || null);
       } catch (error) {
-        console.error("Error fetching goals:", error);
-        setActiveGoals([]);
-        setCompletedGoals([]);
-        setPausedGoals([]);
-      } finally {
-        setLoading(false);
+        console.error("Error fetching wallet data", error);
       }
     };
+    fetchWalletData();
+  }, []);
 
-    if (isFocused) {
-      fetchGoals();
-    }
-  }, [isFocused]);
-
-  const router = useRouter();
+  // --- Filter goals by current tab ---
+  const filteredGoals = goals.filter((g) => {
+    if (mode === "Active Goals") return g.status === "active";
+    if (mode === "Paused Goals") return g.status === "pause";
+    if (mode === "Completed Goals") return g.status === "complete";
+    return false;
+  });
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -108,59 +89,154 @@ const SmartGoalsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Total Saved Card */}
-        <View style={styles.totalCard}>
-          <View style={styles.cardTop}>
-            <View>
-              <Text style={styles.amount}>£ {walletData?.totalSaveAmount ?? "—"}</Text>
-              <Text style={styles.cardLabel}>Total saved</Text>
-            </View>
-            <Image source={require("@/assets/images/Target.png")} />
+      {/* Total Saved Card */}
+      <View style={styles.totalCard}>
+        <View style={styles.cardTop}>
+          <View>
+            <Text style={styles.amount}>
+              £ {walletData?.totalSaveAmount ?? "—"}
+            </Text>
+            <Text style={styles.cardLabel}>Total saved</Text>
           </View>
-          <View style={styles.progressWrapper}>
-            <View style={styles.progressTextContainer}>
-              <Text style={styles.progressText}>Overall Progress</Text>
-              <Text style={styles.progressText}>
-                £ {walletData?.totalSaveAmount ?? "—"} of {walletData?.totalTargetAmount ?? "—"}
-              </Text>
-            </View>
-            <ProgressBar
-              progress={0.13}
-              color="#F97316"
-              style={styles.progressBar}
-            />
-          </View>
+          <Image source={require("@/assets/images/Target.png")} />
         </View>
+        <View style={styles.progressWrapper}>
+          <View style={styles.progressTextContainer}>
+            <Text style={styles.progressText}>Overall Progress</Text>
+            <Text style={styles.progressText}>
+              £ {walletData?.totalSaveAmount ?? "—"} of{" "}
+              {walletData?.totalTargetAmount ?? "—"}
+            </Text>
+          </View>
+          <ProgressBar
+            progress={
+              walletData?.totalTargetAmount
+                ? (walletData.totalSaveAmount ?? 0) /
+                  walletData.totalTargetAmount
+                : 0
+            }
+            color="#F97316"
+            style={styles.progressWalletBar}
+          />
+        </View>
+      </View>
 
-        {/* Active Goals */}
-        <Text style={[styles.tabText, styles.activeTab]}>Active Goals</Text>
-        {loading ? (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>Loading...</Text>
-        ) : activeGoals.length > 0 ? (
-          <ActiveGoalsList goals={activeGoals} />
-        ) : (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>No active goals found</Text>
-        )}
+      {/* Switch Tabs */}
+      <View style={styles.switchTabs}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            mode === "Active Goals" && styles.tabActiveGreen,
+          ]}
+          onPress={() => setMode("Active Goals")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              mode === "Active Goals" && styles.tabTextActiveGreen,
+            ]}
+          >
+            Active Goals
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            mode === "Paused Goals" && styles.tabActiveRed,
+          ]}
+          onPress={() => setMode("Paused Goals")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              mode === "Paused Goals" && styles.tabTextActiveRed,
+            ]}
+          >
+            Paused Goals
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            mode === "Completed Goals" && styles.tabActiveGreen,
+          ]}
+          onPress={() => setMode("Completed Goals")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              mode === "Completed Goals" && styles.tabTextActiveGreen,
+            ]}
+          >
+            Completed Goals
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Paused Goals */}
-        <Text style={[styles.tabText, styles.activeTab]}>Paused Goals</Text>
-        {pausedGoals.length > 0 ? (
-          <ActiveGoalsList goals={pausedGoals} />
-        ) : (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>No paused goals found</Text>
-        )}
+      {/* Goals List */}
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View>
+          {loading ? (
+            <Text>Loading...</Text>
+          ) : filteredGoals.length === 0 ? (
+            <Text>No goals yet</Text>
+          ) : (
+            filteredGoals.map((goal, index) => {
+              const imageKey = goal.goalImage as keyof typeof goalImageMap;
+              const emoji = goalImageMap[imageKey] || "🎯";
+              const progressPercent = goal.goalAmount
+                ? Math.min(
+                    ((goal.savedAmount ?? 0) / goal.goalAmount) * 100,
+                    100
+                  )
+                : 0;
 
-        {/* Completed Goals */}
-        <Text style={[styles.tabText, styles.activeTab]}>Completed Goals</Text>
-        {completedGoals.length > 0 ? (
-          <ActiveGoalsList goals={completedGoals} />
-        ) : (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>No completed goals found</Text>
-        )}
+              return (
+                <TouchableOpacity
+                  key={goal.id ?? index}
+                  style={styles.goalCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/previewGoal/previewGoal",
+                      params: { goal: JSON.stringify(goal) },
+                    })
+                  }
+                >
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalEmoji}>{emoji}</Text>
+                    <Text style={styles.goalTitle}>
+                      {goal.goalName || "Untitled Goal"}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.goalTarget}>
+                    Days Left: {goal.daysLeft ?? "-"}
+                  </Text>
+
+                  <View style={styles.progressBarContainer}>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        { width: `${progressPercent}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.cardAmount}>
+                    <Text style={styles.goalTarget}>
+                      Target: £{(goal.goalAmount ?? 0).toFixed(2)}
+                    </Text>
+                    <Text style={styles.goalStat}>
+                      Saved: £{(goal.savedAmount ?? 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
       </ScrollView>
-
-      {/* Floating Button */}
+      {/* Floating Goal Create Button */}
       <TouchableOpacity
         style={styles.fabFixed}
         onPress={() => router.push("/goal/createGoal")}
@@ -171,7 +247,8 @@ const SmartGoalsScreen = () => {
   );
 };
 
-export default SmartGoalsScreen;
+export default GoalScreen;
+
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
@@ -190,17 +267,6 @@ const styles = StyleSheet.create({
     height: 24,
     resizeMode: "contain",
   },
-  scroll: {
-    padding: 16,
-    paddingBottom: 100,
-    backgroundColor: "#F9FAFB",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
   headerText: {
     fontSize: 20,
     fontWeight: "600",
@@ -214,11 +280,97 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 8,
   },
+  switchTabs: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#F3F4F6",
+    padding: 4,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  tabText: {
+    fontWeight: "600",
+    color: "#9CA3AF",
+  },
+  tabActiveGreen: {
+    backgroundColor: "#D1FAE5",
+  },
+  tabActiveRed: {
+    backgroundColor: "#FEE2E2",
+  },
+  tabTextActiveGreen: {
+    color: "#10B981",
+  },
+  tabTextActiveRed: {
+    color: "#EF4444",
+  },
+  goalCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: wp(2),
+    padding: wp(4),
+    marginBottom: hp(2),
+    width: wp(90),
+    alignSelf: "center",
+  },
+  goalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: hp(1.5),
+  },
+  goalEmoji: {
+    fontSize: wp(6),
+    marginRight: wp(3),
+  },
+  goalTitle: {
+    fontSize: wp(4.2),
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  goalTarget: {
+    fontSize: wp(3.5),
+    color: "#6B7280",
+    marginBottom: hp(1),
+  },
+  goalStat: {
+    fontSize: wp(3.2),
+    color: "#6B7280",
+  },
+  progressBarContainer: {
+    width: "100%",
+    height: hp(1),
+    backgroundColor: "#E5E7EB",
+    borderRadius: wp(1),
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    borderRadius: wp(1),
+    backgroundColor: "#FB923C",
+  },
+  cardAmount: {
+    marginTop: hp(1.2),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  scroll: {
+    padding: 16,
+    paddingBottom: 100,
+    backgroundColor: "#F9FAFB",
+  },
   totalCard: {
     backgroundColor: "#083623",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    margin:10,
   },
   cardTop: {
     flexDirection: "row",
@@ -252,76 +404,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#111827",
   },
-  progressBar: {
+  progressWalletBar: {
     height: 8,
     borderRadius: 8,
     marginTop: 4,
   },
-  tabs: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  tabText: {
-    fontSize: 14,
-    paddingBottom: 8,
-    color: "#6B7280",
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#10B981",
-    color: "#111827",
+  fabIcon: {
+    fontSize: 30,
+    color: "#fff",
     fontWeight: "600",
   },
-  goalCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  goalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  goalTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  goalStatus: {
-    marginLeft: "auto",
-  },
-  statusTextGreen: {
-    color: "#10B981",
-    fontWeight: "500",
-  },
-  statusTextRed: {
-    color: "#F97316",
-    fontWeight: "500",
-  },
-  daysLeft: {
-    marginBottom: 4,
-    color: "#374151",
-  },
-  bold: {
-    fontWeight: "700",
-    color: "#111827",
-  },
-  progressBarGoal: {
-    height: 6,
-    borderRadius: 6,
-    marginTop: 6,
-  },
-  fab: {
+  fabFixed: {
     position: "absolute",
-    bottom: 30,
+    bottom: Platform.OS === "ios" ? "15%" : "12%",
     right: 24,
     backgroundColor: "#389F61",
     width: 56,
@@ -330,24 +425,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 6,
+    zIndex: 10,
   },
-  fabIcon: {
-    fontSize: 30,
-    color: "#fff",
-    fontWeight: "600",
-  },
-  fabFixed: {
-  position: "absolute",
- bottom: Platform.OS === "ios" ? "15%" : "12%",
-  right: 24,
-  backgroundColor: "#389F61",
-  width: 56,
-  height: 56,
-  borderRadius: 28,
-  alignItems: "center",
-  justifyContent: "center",
-  elevation: 6,
-  zIndex: 10,
-},
-
 });

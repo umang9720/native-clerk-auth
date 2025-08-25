@@ -152,8 +152,8 @@ const DepositScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.goalTitle}>New York Trip</Text>
-        <Text style={styles.goalProgress}>£300 at £800</Text>
+        {/* <Text style={styles.goalTitle}>New York Trip</Text>
+        <Text style={styles.goalProgress}>£300 at £800</Text> */}
 
         {/* Switch Tabs */}
         <View style={styles.switchTabs}>

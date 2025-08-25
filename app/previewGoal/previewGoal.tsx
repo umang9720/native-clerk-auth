@@ -108,9 +108,8 @@ const deleteGoal = async () => {
 
   try {
     const token = await getAuthToken("user");
-    const url = `${base_url}/goal/delete`;
 
-    const response = await fetch(url, {
+    const response = await fetch(`${base_url}/goal/delete`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -124,26 +123,37 @@ const deleteGoal = async () => {
       ? await response.json()
       : null;
 
-    if (response.status == 201 && data?.success) {
+    if (response.ok && data?.success) {
+      // ✅ Success case
       Toast.show({
-    type: "success",
-    text1: "Successfully deleted the goal",
-    visibilityTime: 1000,
-  });
+        type: "success",
+        text1: data?.message || "Successfully deleted the goal",
+        visibilityTime: 1500,
+      });
 
-  setTimeout(() => {
-    router.replace("/(tabs)"); // Prevents going back to deleted goal
-  }, 1000); // Slightly longer to let toast display
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 1200);
     } else {
-      console.warn(
-        "Delete failed:",
-        data?.data?.message || data?.message || `Unexpected status: ${response.status}`
-      );
+      // ❌ Failure case (like "Complete the goal before deleting")
+      Toast.show({
+        type: "error",
+        text1: data?.message || "Failed to delete goal",
+        visibilityTime: 2000,
+      });
+      console.warn("Delete failed:", data?.message || data);
     }
   } catch (error) {
+    Toast.show({
+      type: "error",
+      text1: "Error deleting goal",
+      text2: error instanceof Error ? error.message : String(error),
+      visibilityTime: 2000,
+    });
     console.error("Error deleting goal:", error);
   }
 };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
