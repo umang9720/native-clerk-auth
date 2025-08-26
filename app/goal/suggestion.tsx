@@ -10,13 +10,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
-  Image
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const GoalSuggestionsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
-const [goals, setGoals] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
 
   // const endpoint = "/suggestion/all";
 
@@ -44,7 +44,7 @@ const [goals, setGoals] = useState<any[]>([]);
 
         const suggestions = data?.data?.data;
         if (response.ok && Array.isArray(suggestions)) {
-        setGoals([...suggestions].reverse()); 
+          setGoals([...suggestions].reverse());
         } else {
           console.log("No valid suggestions data");
           setGoals([]);
@@ -60,36 +60,83 @@ const [goals, setGoals] = useState<any[]>([]);
     fetchGoalSuggestion();
   }, []);
 
-const renderSuggestion = ({ item }: { item: any }) => (
+const getFutureDateFromToday = (days: number | string) => {
+  const numDays = Number(days);
+  if (isNaN(numDays)) {
+    throw new Error(`Invalid durationInDays: ${days}`);
+  }
 
-  <View style={styles.suggestionCard}>
-    <View style={styles.topRow}>
-      <View style={styles.iconCircle}>
-        {item.icon?.startsWith("http") ? (
-          <Image source={{ uri: item.icon }} style={styles.goalIconImage} />
-        ) : (
-          <Text style={styles.goalIcon}>{item.icon || "🎯"}</Text>
-        )}
+  const today = new Date();
+  today.setDate(today.getDate() + numDays);
+
+  return today.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
+  //for goal creation
+const addGoal = async (item: any) => {
+  try {
+    const token = await getAuthToken("user");
+    if (!token) return;
+
+    const futureDate = getFutureDateFromToday(item.durationInDays);
+    console.log("futureDate:", futureDate);
+console.log("durationInDays type:", typeof item.durationInDays, item.durationInDays);
+
+    const response = await fetch(`${base_url}/create/goal`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        goalImage: item.icon,
+        goalName: item.title,
+        goalAmount: parseFloat(item.amount),
+        durationInDate: getFutureDateFromToday(item.durationInDays),
+        reward: {
+          name: "Laptop Bag",
+          description: "Get a stylish laptop bag on goal completion.",
+          imageUrl: "laptop-bag.jpg",
+        },
+      }),
+    });
+
+    const result = await response.json();
+    console.log("Goal creation response:", result);
+  } catch (err) {
+    console.error("Error adding goal:", err);
+  }
+};
+
+  const renderSuggestion = ({ item }: { item: any }) => (
+    <View style={styles.suggestionCard}>
+      <View style={styles.topRow}>
+        <View style={styles.iconCircle}>
+          {item.icon?.startsWith("http") ? (
+            <Image source={{ uri: item.icon }} style={styles.goalIconImage} />
+          ) : (
+            <Text style={styles.goalIcon}>{item.icon || "🎯"}</Text>
+          )}
+        </View>
+
+        <View style={styles.titleSection}>
+          <Text style={styles.suggestionTitle}>{item.title}</Text>
+          <Text style={styles.durationText}>
+            Duration: {item.durationInDays} Days
+          </Text>
+        </View>
+
+        <Text style={styles.amountText}>£{item.amount?.toFixed(2)}</Text>
       </View>
 
-      <View style={styles.titleSection}>
-        <Text style={styles.suggestionTitle}>{item.title}</Text>
-        <Text style={styles.durationText}>Duration: {item.durationInDays} Days</Text>
+      <View style={styles.footer}>
+        <Text style={styles.description}>{item.description}</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => addGoal(item)}>
+          <Text style={styles.addButtonText}  >Add Goal</Text>
+        </TouchableOpacity>
       </View>
-
-      <Text style={styles.amountText}>£{item.amount?.toFixed(2)}</Text>
     </View>
-
-  <View style={styles.footer}>
-  <Text style={styles.description}>{item.description}</Text>
-  <TouchableOpacity style={styles.addButton}>
-    <Text style={styles.addButtonText}>Add Goal</Text>
-  </TouchableOpacity>
-</View>
-
-  </View>
-);
-
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -147,67 +194,67 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 16,
   },
-suggestionCard: {
-  backgroundColor: "#FFFFFF",
-  padding: 16,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "#E5E7EB",
-  marginBottom: 16,
-},
+  suggestionCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 16,
+  },
 
-topRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 10,
-},
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 
-iconCircle: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: "#F3F4F6",
-  alignItems: "center",
-  justifyContent: "center",
-  marginRight: 12,
-},
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
 
-goalIcon: {
-  fontSize: 20,
-},
+  goalIcon: {
+    fontSize: 20,
+  },
 
-goalIconImage: {
-  width: 24,
-  height: 24,
-  resizeMode: "contain",
-},
+  goalIconImage: {
+    width: 24,
+    height: 24,
+    resizeMode: "contain",
+  },
 
-titleSection: {
-  flex: 1,
-},
+  titleSection: {
+    flex: 1,
+  },
 
-suggestionTitle: {
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#111827",
-},
+  suggestionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
 
-durationText: {
-  fontSize: 14,
-  color: "#6B7280",
-},
+  durationText: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
 
-amountText: {
-  fontSize: 16,
-  fontWeight: "700",
-  color: "#16A34A",
-},
+  amountText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
 
-addButtonText: {
-  color: "#FFFFFF",
-  fontWeight: "600",
-  fontSize: 14,
-},
+  addButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
 
   suggestionAmount: {
     fontSize: 14,
@@ -219,30 +266,29 @@ addButtonText: {
     marginTop: 32,
     color: "#6B7280",
   },
- footer: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginTop: 8,
-  flexWrap: "wrap",
-  gap: 8,
-},
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+    flexWrap: "wrap",
+    gap: 8,
+  },
 
-description: {
-  flex: 1,
-  fontSize: 13,
-  fontWeight: "400",
-  color: "#637587",
-  lineHeight: 18,
-  paddingRight: 8,
-},
+  description: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#637587",
+    lineHeight: 18,
+    paddingRight: 8,
+  },
 
-addButton: {
-  backgroundColor: "#16A34A",
-  paddingVertical: 6,
-  paddingHorizontal: 14,
-  borderRadius: 6,
-  alignSelf: "flex-start",
-},
-
+  addButton: {
+    backgroundColor: "#16A34A",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+  },
 });

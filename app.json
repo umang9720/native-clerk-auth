@@ -4,7 +4,10 @@
     "slug": "bbbj",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["android", "ios"],
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "owner": "souravsharma05",
     "icon": "./assets/images/icon.png",
     "scheme": "bbbj",
@@ -38,7 +41,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

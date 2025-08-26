@@ -238,14 +238,28 @@ export default function SmartSavings() {
                            </Text>
                 </View> */}
               </View>
-              <Text style={styles.streak}>🔥 3 Days Saving Streak</Text>
-              <View style={styles.habits}>
-                {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, index) => (
-                  <Text key={index} style={{ fontSize: 20 }}>
-                    {circle}
-                  </Text>
-                ))}
-              </View>
+             <Text style={styles.streak}>
+                       🔥 {walletData?.calculated?.streakDays ?? 0} Days
+                     </Text>
+               <View style={styles.habitRow}>
+                      {walletData?.calculated?.streakActivity?.length ? (
+                        walletData.calculated.streakActivity.map((activity) => (
+                          <View
+                            key={activity.date}
+                            style={{ alignItems: "center", marginRight: 8 }}
+                          >
+                            <Text style={{ fontSize: 18 }}>
+                              {activity.sacrificed ? "✅" : "❌"}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: "#555" }}>
+                              {activity.day}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={{ color: "#fff" }}>No streak data yet</Text>
+                      )}
+                    </View>
             </View>
 
             {/* Challenges */}
@@ -430,5 +444,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     color: "#ffffff",
+  },
+    habitRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
   },
 });

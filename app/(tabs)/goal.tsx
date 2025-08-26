@@ -68,7 +68,7 @@ const GoalScreen = () => {
   // --- Filter goals by current tab ---
   const filteredGoals = goals.filter((g) => {
     if (mode === "Active Goals") return g.status === "active";
-    if (mode === "Paused Goals") return g.status === "pause";
+    // if (mode === "Paused Goals") return g.status === "pause";
     if (mode === "Completed Goals") return g.status === "complete";
     return false;
   });
@@ -139,7 +139,7 @@ const GoalScreen = () => {
             Active Goals
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[
             styles.tabButton,
             mode === "Paused Goals" && styles.tabActiveRed,
@@ -154,7 +154,7 @@ const GoalScreen = () => {
           >
             Paused Goals
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity
           style={[
             styles.tabButton,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     backgroundColor: "#F3F4F6",
-    padding: 4,
+    padding: 6,
     borderRadius: 8,
     marginBottom: 20,
   },
