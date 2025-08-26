@@ -240,7 +240,7 @@ export default function Page() {
             disabled={isLoading}
           >
             <Image
-              source={require("@/assets/images/logo_google.png")}
+              source={require("@/assets/images/logo_microsoft.png")}
               style={styles.logo}
             />
             <Text style={styles.buttonText}>

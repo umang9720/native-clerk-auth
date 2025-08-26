@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
 import { useFocusEffect } from "@react-navigation/native";
@@ -20,12 +20,37 @@ type Goal = {
   id: string;
   goalName: string;
 };
+type StreakActivity = {
+  date: string;
+  day: string;
+  sacrificed: boolean;
+};
 
+type Calculated = {
+  totalSaveAmount: number;
+  totalSacrificeSaveAmount: number;
+  todaySaving: number;
+  thisWeekSaving: number;
+  streakDays: number;
+  streakActivity: StreakActivity[];
+};
+
+type Wallet = {
+  _id: string;
+  totalSaveAmount: number;
+  totalTargetAmount: number;
+  isBankConnected: boolean;
+  userId: string;
+  __v: number;
+  calculated: Calculated;
+};
 export default function SmartSavings() {
   const router = useRouter();
   const navigation = useNavigation();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+    const [walletData, setWalletData] = useState<Wallet | null>(null);
+  
 
   const fetchGoals = useCallback(async () => {
     try {
@@ -145,6 +170,37 @@ export default function SmartSavings() {
     },
   ];
 
+    //for fetching wallet data
+    useEffect(() => {
+      const fetchWalletData = async () => {
+        try {
+          const token = await getAuthToken("user");
+          const response = await fetch(`${base_url}/wallet/user`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+  
+          const json = await response.json();
+          console.log("Parsed response data:", JSON.stringify(json, null, 2));
+  
+          const payload = json?.data?.data as Wallet | undefined;
+          if (payload) {
+            setWalletData(payload);
+          } else {
+            console.warn("Unexpected wallet response shape:", json);
+          }
+        } catch (error) {
+          console.error("Error fetching wallet data:", error);
+        }
+      };
+  
+      fetchWalletData();
+    }, []);
+  
+    const formatGBP = (v?: number) => `£${Number(v ?? 0).toFixed(2)}`;
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -171,12 +227,16 @@ export default function SmartSavings() {
               >
                 <View>
                   <Text style={styles.label}>Today's Saving</Text>
-                  <Text style={styles.amount}>£13.00</Text>
+                  <Text style={styles.cardAmount}>
+                             {formatGBP(walletData?.totalSaveAmount)}
+                           </Text>
                 </View>
-                <View>
+                {/* <View>
                   <Text style={styles.label}>This Week</Text>
-                  <Text style={styles.amount}>£40.00</Text>
-                </View>
+                  <Text style={styles.cardAmount}>
+                             {formatGBP(walletData?.calculated?.thisWeekSaving)}
+                           </Text>
+                </View> */}
               </View>
               <Text style={styles.streak}>🔥 3 Days Saving Streak</Text>
               <View style={styles.habits}>
@@ -365,5 +425,10 @@ const styles = StyleSheet.create({
   },
   goalActive: {
     backgroundColor: "#065F46",
+  },
+  cardAmount: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#ffffff",
   },
 });

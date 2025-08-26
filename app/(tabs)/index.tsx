@@ -9,37 +9,68 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
 import { useIsFocused } from "@react-navigation/native";
 import { ActiveGoalsList } from "@/components/ActiveGoals/ActiveGoalList";
+import { fetchGoals } from "@/utils/fetchgoals";
 
 const { width, height } = Dimensions.get("window");
 const wp = (percentage: any) => (width * percentage) / 100;
 const hp = (percentage: any) => (height * percentage) / 100;
 
+type StreakActivity = {
+  date: string;
+  day: string;
+  sacrificed: boolean;
+};
+
+type Calculated = {
+  totalSaveAmount: number;
+  totalSacrificeSaveAmount: number;
+  todaySaving: number;
+  thisWeekSaving: number;
+  streakDays: number;
+  streakActivity: StreakActivity[];
+};
+
+type Wallet = {
+  _id: string;
+  totalSaveAmount: number;
+  totalTargetAmount: number;
+  isBankConnected: boolean;
+  userId: string;
+  __v: number;
+  calculated: Calculated;
+};
+
 export default function Index() {
   const router = useRouter();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [walletData, setWalletData] = useState<Wallet | null>(null);
   const isFocused = useIsFocused();
   const endpoint = "/goals/user";
-
-  useEffect(() => {
-    const fetchGoals = async () => {
-      try {
+  useFocusEffect(
+    useCallback(() => {
+      const loadGoals = async () => {
         setLoading(true);
+        const data = await fetchGoals();
+        setGoals(data);
+        setLoading(false);
+      };
+      loadGoals();
+    }, [])
+  );
+  //for fetching wallet data
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      try {
         const token = await getAuthToken("user");
-        if (!token) {
-          console.warn("User not found in storage");
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`${base_url}${endpoint}`, {
+        const response = await fetch(`${base_url}/wallet/user`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -47,28 +78,66 @@ export default function Index() {
           },
         });
 
-        const data = await response.json();
-        console.log("Parsed response data:", data);
+        const json = await response.json();
+        console.log("Parsed response data:", JSON.stringify(json, null, 2));
 
-        if (response?.status === 201 && Array.isArray(data?.data?.data)) {
-          const activeGoals = data.data.data.filter(
-            (goal: any) => goal.status === "active"
-          );
-          setGoals(activeGoals);
+        const payload = json?.data?.data as Wallet | undefined;
+        if (payload) {
+          setWalletData(payload);
         } else {
-          console.log("No valid goals data");
-          setGoals([]);
+          console.warn("Unexpected wallet response shape:", json);
         }
-      } catch (error: any) {
-        console.error("Error fetching goals:", error.message);
-        setGoals([]);
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching wallet data:", error);
       }
     };
 
-    if (isFocused) fetchGoals();
-  }, [isFocused]);
+    fetchWalletData();
+  }, []);
+
+  const formatGBP = (v?: number) => `£${Number(v ?? 0).toFixed(2)}`;
+
+  // useEffect(() => {
+  //   const fetchGoals = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const token = await getAuthToken("user");
+  //       if (!token) {
+  //         console.warn("User not found in storage");
+  //         setLoading(false);
+  //         return;
+  //       }
+
+  //       const response = await fetch(`${base_url}${endpoint}`, {
+  //         method: "POST",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json",
+  //         },
+  //       });
+
+  //       const data = await response.json();
+  //       console.log("Parsed response data:", data);
+
+  //       if (response?.status === 201 && Array.isArray(data?.data?.data)) {
+  //         const activeGoals = data.data.data.filter(
+  //           (goal: any) => goal.status === "active"
+  //         );
+  //         setGoals(activeGoals);
+  //       } else {
+  //         console.log("No valid goals data");
+  //         setGoals([]);
+  //       }
+  //     } catch (error: any) {
+  //       console.error("Error fetching goals:", error.message);
+  //       setGoals([]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (isFocused) fetchGoals();
+  // }, [isFocused]);
 
   const renderHeader = () => (
     <>
@@ -82,10 +151,16 @@ export default function Index() {
           <Text style={styles.headerText}>BuckUp</Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push("/notifications/notification")}
+          >
             <MaterialIcons name="notifications-none" size={24} color="black" />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, styles.walletIcon]}>
+          <TouchableOpacity
+            style={[styles.iconButton, styles.walletIcon]}
+            onPress={() => router.push("/wallet/wallet")}
+          >
             <MaterialIcons
               name="account-balance-wallet"
               size={20}
@@ -102,26 +177,51 @@ export default function Index() {
       </View>
 
       <View style={styles.Card}>
+        
         {/* Savings Card */}
-        <View style={styles.savingsCard}>
-          <View style={styles.savingsRow}>
-            <View>
-              <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
-              <Text style={styles.cardAmount}>£13.00</Text>
-              <Text style={styles.cardQuote}>
-                “Your habits are creating financial freedom.”
+<View style={styles.savingsCard}>
+  {!walletData ? ( // <--- show loading until data is fetched
+    <Text style={{ color: "#fff" }}>Loading wallet data...</Text>
+  ) : (
+    <>
+      <View style={styles.savingsRow}>
+        <View>
+          <Text style={styles.cardLabel}>Today&apos;s Saving</Text>
+          <Text style={styles.cardAmount}>
+            {formatGBP(walletData?.totalSaveAmount)}
+          </Text>
+          <Text style={styles.cardQuote}>
+            “Your habits are creating financial freedom.”
+          </Text>
+        </View>
+        <Text style={styles.streak}>
+          🔥 {walletData?.calculated?.streakDays ?? 0} Days
+        </Text>
+      </View>
+
+      {/* Streak activity row */}
+      <View style={styles.habitRow}>
+        {walletData?.calculated?.streakActivity?.length ? (
+          walletData.calculated.streakActivity.map((activity) => (
+            <View
+              key={activity.date}
+              style={{ alignItems: "center", marginRight: 8 }}
+            >
+              <Text style={{ fontSize: 18 }}>
+                {activity.sacrificed ? "✅" : "❌"}
+              </Text>
+              <Text style={{ fontSize: 12, color: "#555" }}>
+                {activity.day}
               </Text>
             </View>
-            <Text style={styles.streak}>🔥 3 Days</Text>
-          </View>
-          <View style={styles.habitRow}>
-            {"🟢🟢🟢🟢🟢🔴🟢".split("").map((circle, idx) => (
-              <Text key={idx} style={{ fontSize: 18 }}>
-                {circle}
-              </Text>
-            ))}
-          </View>
-        </View>
+          ))
+        ) : (
+          <Text style={{ color: "#fff" }}>No streak data yet</Text>
+        )}
+      </View>
+    </>
+  )}
+</View>
 
         {/* Active Goals Title */}
         <View style={styles.section}>

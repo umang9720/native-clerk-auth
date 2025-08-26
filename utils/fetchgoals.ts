@@ -14,13 +14,13 @@ export const fetchGoals = async () => {
       },
     });
 
-    console.log("📡 Response status:", res.status);
+    // console.log("📡 Response status:", res.status);
 
     const data = await res.json();
-    console.log("📦 Raw response data:", data);
+    // console.log("📦 Raw response data:", data);
 
     const allGoals = data?.data?.data ?? [];
-    console.log("✅ Extracted goals:", allGoals);
+    // console.log("✅ Extracted goals:", allGoals);
 
 return allGoals.reverse(); // newest first
   } catch (err) {
