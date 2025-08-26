@@ -26,7 +26,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onSplashComplete }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/assets/images/splash_icon.png")}
+        source={require("@/assets/images/splash_icon.jpg")}
         style={{ width: 80, height: 80, marginBottom: 15 }}
       />
       <StatusBar barStyle="light-content"/>

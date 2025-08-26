@@ -150,10 +150,10 @@ console.log(response)
             {method.key === "DailyPocket" &&
               selectedMethods.includes("DailyPocket") && (
                 <View style={styles.sliderWrapper}>
-                  <Text>£0</Text>
+                  <Text>£1</Text>
                   <Slider
                     style={{ flex: 1, marginHorizontal: 10 }}
-                    minimumValue={0}
+                    minimumValue={1}
                     maximumValue={10}
                     step={0.5}
                     value={dailyPocketAmount}

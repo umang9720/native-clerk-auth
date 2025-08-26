@@ -60,7 +60,7 @@ const GoalSuggestionsPage: React.FC = () => {
     fetchGoalSuggestion();
   }, []);
 
-const getFutureDateFromToday = (days: number | string) => {
+const getFutureDateFromToday = (days: number | string): string => {
   const numDays = Number(days);
   if (isNaN(numDays)) {
     throw new Error(`Invalid durationInDays: ${days}`);
@@ -69,7 +69,11 @@ const getFutureDateFromToday = (days: number | string) => {
   const today = new Date();
   today.setDate(today.getDate() + numDays);
 
-  return today.toISOString().split("T")[0]; // YYYY-MM-DD
+  const dd = String(today.getDate()).padStart(2, "0");
+  const mm = String(today.getMonth() + 1).padStart(2, "0"); // months are 0-based
+  const yyyy = today.getFullYear();
+
+  return `${dd}-${mm}-${yyyy}`;
 };
 
   //for goal creation

@@ -68,7 +68,7 @@ const GoalScreen = () => {
   // --- Filter goals by current tab ---
   const filteredGoals = goals.filter((g) => {
     if (mode === "Active Goals") return g.status === "active";
-    // if (mode === "Paused Goals") return g.status === "pause";
+    if (mode === "Paused Goals") return g.status === "pause";
     if (mode === "Completed Goals") return g.status === "complete";
     return false;
   });

@@ -59,7 +59,7 @@ export default function Index() {
       const loadGoals = async () => {
         setLoading(true);
         const data = await fetchGoals();
-        setGoals(data);
+       setGoals(data.reverse());
         setLoading(false);
       };
       loadGoals();
@@ -145,7 +145,7 @@ export default function Index() {
       <View style={styles.container}>
         <View style={styles.headerLeft}>
           <Image
-            source={require("@/assets/images/splash_icon.png")}
+            source={require("@/assets/images/splash_icon.jpg")}
             style={styles.headerLeftIcon}
           />
           <Text style={styles.headerText}>BuckUp</Text>

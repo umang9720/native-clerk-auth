@@ -101,59 +101,111 @@ const PreviewGoal = () => {
     }, [selectedGoal?.id])
   );
 
-  //delete goal
-const deleteGoal = async () => {
-  const goalId = selectedGoal?.id;
-  if (!goalId) return;
+  // delete goal
+  const deleteGoal = async () => {
+    const goalId = selectedGoal?.id;
+    if (!goalId) return;
 
-  try {
-    const token = await getAuthToken("user");
+    try {
+      const token = await getAuthToken("user");
 
-    const response = await fetch(`${base_url}/goal/delete`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ goalId }),
-    });
-
-    const contentType = response.headers.get("content-type");
-    const data = contentType?.includes("application/json")
-      ? await response.json()
-      : null;
-
-    if (response.ok && data?.success) {
-      // ✅ Success case
-      Toast.show({
-        type: "success",
-        text1: data?.message || "Successfully deleted the goal",
-        visibilityTime: 1500,
+      const response = await fetch(`${base_url}/goal/delete`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ goalId }),
       });
 
-      setTimeout(() => {
-        router.replace("/(tabs)");
-      }, 1200);
-    } else {
-      // ❌ Failure case (like "Complete the goal before deleting")
+      const contentType = response.headers.get("content-type");
+      const data = contentType?.includes("application/json")
+        ? await response.json()
+        : { message: await response.text() };
+
+      // ✅ success condition adjusted for your API
+      if (response.ok && (data?.success || data?.data?.code === 1)) {
+        Toast.show({
+          type: "success",
+          text1: data?.data?.message || "Goal deleted successfully",
+          visibilityTime: 1500,
+        });
+
+        setTimeout(() => {
+          router.replace("/(tabs)");
+        }, 1500);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: data?.data?.message || "Failed to delete goal",
+          visibilityTime: 2000,
+        });
+        console.warn("Delete failed:", data);
+      }
+    } catch (error) {
       Toast.show({
         type: "error",
-        text1: data?.message || "Failed to delete goal",
+        text1: "Error deleting goal",
+        text2: error instanceof Error ? error.message : String(error),
         visibilityTime: 2000,
       });
-      console.warn("Delete failed:", data?.message || data);
+      console.error("Error deleting goal:", error);
     }
-  } catch (error) {
-    Toast.show({
-      type: "error",
-      text1: "Error deleting goal",
-      text2: error instanceof Error ? error.message : String(error),
-      visibilityTime: 2000,
-    });
-    console.error("Error deleting goal:", error);
-  }
-};
+  };
 
+  // ✅ Complete Goal
+  const completeGoal = async () => {
+    const goalId = selectedGoal?.id;
+    if (!goalId) return;
+
+    try {
+      const token = await getAuthToken("user");
+
+      const response = await fetch(`${base_url}/update/goal`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          goalId,
+          status: "complete",
+        }),
+      });
+      console.log(goalId);
+      const contentType = response.headers.get("content-type");
+      const data = contentType?.includes("application/json")
+        ? await response.json()
+        : { raw: await response.text() }; // fallback for HTML response
+
+      if (response.ok && (data?.success || data?.data?.code === 1)) {
+        Toast.show({
+          type: "success",
+          text1: data?.message || "Goal marked as complete",
+          visibilityTime: 1500,
+        });
+
+        setTimeout(() => {
+          router.push("/(tabs)");
+        }, 1500);
+      } else {
+        Toast.show({
+          type: "error",
+          text1: data?.message || "Failed to complete goal",
+          visibilityTime: 2000,
+        });
+        console.warn("Complete failed:", data);
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error completing goal",
+        text2: error instanceof Error ? error.message : String(error),
+        visibilityTime: 2000,
+      });
+      console.error("Error completing goal:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -303,32 +355,41 @@ const deleteGoal = async () => {
           </ScrollView>
 
           {/* Fixed bottom actions */}
-          <View
-            style={[styles.fixedActions, { paddingBottom: insets.bottom + 16 }]}
-          >
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.outlinedBtn}>
-                <Text>Complete Goal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.outlinedBtn}
-                onPress={() =>
-                  router.push({
-                    pathname: "/previewGoal/deposit",
-                    params: { id: selectedGoal.id },
-                  })
-                }
+          {selectedGoal?.status !== "pause" &&
+            selectedGoal?.status !== "complete" && (
+              <View
+                style={[
+                  styles.fixedActions,
+                  { paddingBottom: insets.bottom + 16 },
+                ]}
               >
-                <Text>Deposit</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={styles.greenBtn}
-              onPress={() => router.push("/(tabs)/save")}
-            >
-              <Text style={styles.greenBtnText}>Add Savings</Text>
-            </TouchableOpacity>
-          </View>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.outlinedBtn}
+                    onPress={completeGoal}
+                  >
+                    <Text>Complete Goal</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.outlinedBtn}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/previewGoal/deposit",
+                        params: { id: selectedGoal.id },
+                      })
+                    }
+                  >
+                    <Text>Deposit</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={styles.greenBtn}
+                  onPress={() => router.push("/(tabs)/save")}
+                >
+                  <Text style={styles.greenBtnText}>Add Savings</Text>
+                </TouchableOpacity>
+              </View>
+            )}
         </>
       ) : (
         <Text style={{ padding: 20 }}>No goal data available.</Text>
