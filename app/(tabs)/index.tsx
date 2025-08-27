@@ -1,3 +1,4 @@
+
 import { ActiveGoalsList } from "@/components/ActiveGoals/ActiveGoalList";
 import { base_url } from "@/config/url";
 import { useNotification } from "@/context/NotificationContext";
@@ -23,11 +24,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 const { width, height } = Dimensions.get("window");
 const wp = (percentage: any) => (width * percentage) / 100;
 const hp = (percentage: any) => (height * percentage) / 100;
 
 export default function Index() {
+
   const [prevPermissionStatus, setPrevPermissionStatus] = useState<
     string | null
   >(null);
@@ -122,11 +125,13 @@ export default function Index() {
     ? "This app is running from built-in code"
     : "This app is running an update";
 
+
   const router = useRouter();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
   const endpoint = "/goals/user";
+
 
   // 📌 Check notification permission + send device token
   useEffect(() => {
@@ -183,7 +188,7 @@ export default function Index() {
     registerForPushNotifications();
   }, []);
 
-  // 📌 Fetch active goals
+
   useEffect(() => {
     const fetchGoals = async () => {
       try {
@@ -204,12 +209,16 @@ export default function Index() {
         });
 
         const data = await response.json();
+
+
         if (response?.status === 201 && Array.isArray(data?.data?.data)) {
           const activeGoals = data.data.data.filter(
             (goal: any) => goal.status === "active"
           );
           setGoals(activeGoals);
         } else {
+
+
           setGoals([]);
         }
       } catch (error: any) {
@@ -223,9 +232,12 @@ export default function Index() {
     if (isFocused) fetchGoals();
   }, [isFocused]);
 
+
   // 🔹 The rest of your renderHeader, renderFooter, styles remain unchanged
   const renderHeader = () => (
     <>
+
+
       <View style={styles.container}>
         <View style={styles.headerLeft}>
           <Image
@@ -253,7 +265,9 @@ export default function Index() {
           </TouchableOpacity>
         </View>
       </View>
+
       <View style={styles.Card}>
+
         <View style={styles.savingsCard}>
           <View style={styles.savingsRow}>
             <View>
@@ -273,6 +287,7 @@ export default function Index() {
             ))}
           </View>
         </View>
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Active Goals</Text>
@@ -285,7 +300,7 @@ export default function Index() {
   const renderFooter = () => (
     <>
       <View style={styles.Card}>
-        {/* Active Challenges */}
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Active Challenges</Text>
@@ -295,6 +310,7 @@ export default function Index() {
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
+
           <View style={styles.challengeRow}>
             {[
               {
@@ -320,6 +336,27 @@ export default function Index() {
             ))}
           </View>
         </View>
+
+
+        {/* Impact Card */}
+        <View style={styles.impactCard}>
+          <View style={styles.impactTop}>
+            <View>
+              <Text style={styles.impactAmount}>£1,605</Text>
+              <Text style={styles.impactLabel}>Potential yearly savings</Text>
+            </View>
+            <View>
+              <Text style={styles.impactPercent}>68%</Text>
+              <Text style={styles.impactLabel}>Success rate</Text>
+            </View>
+          </View>
+          <View style={styles.impactList}>
+            <Text>✅ Avoided 18 sugary drinks</Text>
+            <Text>✅ Added 5,000+ steps weekly</Text>
+            <Text>✅ Reduced caffeine by 20%</Text>
+          </View>
+        </View>
+
       </View>
     </>
   );

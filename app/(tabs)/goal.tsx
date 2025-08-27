@@ -22,9 +22,11 @@ import { useIsFocused } from "@react-navigation/native"; // if needed
 Dimensions.get("window");
 
 const SmartGoalsScreen = () => {
-  const [goals, setGoals] = useState([]);
+  const [activeGoals, setActiveGoals] = useState<any[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<any[]>([]);
+  const [pausedGoals, setPausedGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true); 
-   const [walletData, setWalletData] = useState<any>(null);
+  const [walletData, setWalletData] = useState<any>(null);
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -38,32 +40,25 @@ const SmartGoalsScreen = () => {
           return;
         }
 
-        //wallet connection
-       const fetchWalletData = async () => {
-      const token = await getAuthToken("user");
-      if (!token) return;
+        // --- Fetch Wallet Data ---
+        const fetchWalletData = async () => {
+          try {
+            const response = await fetch(`${base_url}/wallet/user`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            const json = await response.json();
+            setWalletData(json?.data?.data || null);
+          } catch (error) {
+            console.error("Error fetching wallet data", error);
+          }
+        };
+        await fetchWalletData();
 
-      try {
-        const response = await fetch(`${base_url}/wallet/user`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        const json = await response.json();
-        const wallet = json?.data?.data;
-        setWalletData(wallet);
-        // console.log("Wallet data:", wallet);
-      } catch (error) {
-        console.error("Error fetching wallet data", error);
-      }
-    };
-
-    fetchWalletData();
-
-        //for displaying active goals of user
+        // --- Fetch All Goals ---
         const response = await fetch(`${base_url}/goals/user`, {
           method: "POST",
           headers: {
@@ -73,25 +68,18 @@ const SmartGoalsScreen = () => {
         });
 
         const data = await response.json();
+        const allGoals = Array.isArray(data?.data?.data) ? data.data.data.reverse() : [];
 
-        if (response.status === 201 && Array.isArray(data?.data?.data)) {
-          const allGoals = data.data.data;
+        // --- Filter by Status ---
+        setActiveGoals(allGoals.filter((g: any) => g.status === "active"));
+        setCompletedGoals(allGoals.filter((g: any) => g.status === "complete"));
+        setPausedGoals(allGoals.filter((g: any) => g.status === "pause"));
 
-          // 🟢 Reverse and then filter active goals
-          const activeGoals = allGoals
-            .reverse()
-            .filter((goal: any) => goal.status === "active");
-
-          setGoals(activeGoals);
-        } else {
-          setGoals([]);
-        }
-        const activeGoals =
-          data?.data?.data?.filter((g: any) => g.status === "active") || [];
-        setGoals(activeGoals.reverse()); // Reverse to show latest at top
       } catch (error) {
         console.error("Error fetching goals:", error);
-        setGoals([]);
+        setActiveGoals([]);
+        setCompletedGoals([]);
+        setPausedGoals([]);
       } finally {
         setLoading(false);
       }
@@ -103,6 +91,7 @@ const SmartGoalsScreen = () => {
   }, [isFocused]);
 
   const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       {/* Header */}
@@ -118,6 +107,7 @@ const SmartGoalsScreen = () => {
           />
         </TouchableOpacity>
       </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Total Saved Card */}
         <View style={styles.totalCard}>
@@ -131,7 +121,9 @@ const SmartGoalsScreen = () => {
           <View style={styles.progressWrapper}>
             <View style={styles.progressTextContainer}>
               <Text style={styles.progressText}>Overall Progress</Text>
-              <Text style={styles.progressText}> £ {walletData?.totalSaveAmount ?? "—"} of {walletData?.totalTargetAmount ?? "—"}</Text>
+              <Text style={styles.progressText}>
+                £ {walletData?.totalSaveAmount ?? "—"} of {walletData?.totalTargetAmount ?? "—"}
+              </Text>
             </View>
             <ProgressBar
               progress={0.13}
@@ -141,27 +133,34 @@ const SmartGoalsScreen = () => {
           </View>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          <Text style={[styles.tabText, styles.activeTab]}>Active Goals</Text>
-          <Text style={styles.tabText}>Pause</Text>
-          <Text style={styles.tabText}>Completed Goal</Text>
-        </View>
-
-        {/* Goal Cards */}
+        {/* Active Goals */}
+        <Text style={[styles.tabText, styles.activeTab]}>Active Goals</Text>
         {loading ? (
           <Text style={{ textAlign: "center", marginTop: 20 }}>Loading...</Text>
-        ) : goals.length > 0 ? (
-          <ActiveGoalsList goals={goals} />
+        ) : activeGoals.length > 0 ? (
+          <ActiveGoalsList goals={activeGoals} />
         ) : (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>
-            No active goals
-          </Text>
+          <Text style={{ textAlign: "center", marginTop: 20 }}>No active goals found</Text>
         )}
 
-       
+        {/* Paused Goals */}
+        <Text style={[styles.tabText, styles.activeTab]}>Paused Goals</Text>
+        {pausedGoals.length > 0 ? (
+          <ActiveGoalsList goals={pausedGoals} />
+        ) : (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>No paused goals found</Text>
+        )}
+
+        {/* Completed Goals */}
+        <Text style={[styles.tabText, styles.activeTab]}>Completed Goals</Text>
+        {completedGoals.length > 0 ? (
+          <ActiveGoalsList goals={completedGoals} />
+        ) : (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>No completed goals found</Text>
+        )}
       </ScrollView>
-      {/* Fixed Floating Button */}
+
+      {/* Floating Button */}
       <TouchableOpacity
         style={styles.fabFixed}
         onPress={() => router.push("/goal/createGoal")}

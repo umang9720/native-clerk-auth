@@ -40,13 +40,13 @@ const GoalSuggestionsPage: React.FC = () => {
         });
 
         const data = await response.json();
-        // console.log("Parsed response data:", data);
+        console.log("Parsed response data:", data);
 
         const suggestions = data?.data?.data;
         if (response.ok && Array.isArray(suggestions)) {
           setGoals([...suggestions].reverse());
         } else {
-          // console.log("No valid suggestions data");
+          console.log("No valid suggestions data");
           setGoals([]);
         }
       } catch (error: any) {

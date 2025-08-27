@@ -86,13 +86,13 @@ const SavingMethod = () => {
         savingMethod,
       }),
     });
-// console.log(response)
+console.log(response)
     if (response.ok) {
       router.push("/bank/ConnectBankPage");
     } else {
-      // console.log("Failed to update goal. Status:", response.status);
+      console.log("Failed to update goal. Status:", response.status);
       const error = await response.json();
-      // console.log("Error body:", error);
+      console.log("Error body:", error);
     }
   };
 

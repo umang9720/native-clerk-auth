@@ -32,8 +32,6 @@ export const useWarmUpBrowser = () => {
 
 export default function Page() {
 
-
-
   const router = useRouter();
   const { width } = useWindowDimensions();
 
@@ -45,6 +43,7 @@ export default function Page() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStrategy, setLoadingStrategy] = useState<
+
     null | "oauth_google" | "oauth_apple" | "oauth_microsoft"
   >(null);
   const [showContent, setShowContent] = useState(false); // <-- control rendering
@@ -84,6 +83,7 @@ export default function Page() {
     [startSSOFlow, isLoading]
   );
 
+
   const { expoPushToken } = useNotification();
   let devicetoken = expoPushToken;
   if (!expoPushToken) { devicetoken = "null" }
@@ -91,6 +91,13 @@ export default function Page() {
     const checkAuthAndSignIn = async () => {
       const existingToken = await getAuthToken("user");
       if (existingToken) {
+
+  useEffect(() => {
+    const checkAuthAndSignIn = async () => {
+      const existingToken = await getAuthToken("user");
+
+      if (existingToken) {
+        // Token exists → redirect immediately
         Toast.show({
           type: "success",
           text1: `Welcome Back! ${user?.fullName || "User"}`,
@@ -121,7 +128,9 @@ export default function Page() {
               providerName: user.externalAccounts?.[0]?.provider,
               providerId: userId,
             },
+
             deviceToken: devicetoken,
+
           }),
         });
 
@@ -232,8 +241,12 @@ export default function Page() {
                 : "Continue with Google"}
             </Text>
           </TouchableOpacity>
-          {/* Microsoft Button */}
-          <TouchableOpacity
+<<<<<<< HEAD
+
+=======
+{/* Microsoft Button */}
+ <TouchableOpacity
+>>>>>>> origin/new_theme
             style={[
               styles.button,
               {
@@ -359,4 +372,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
+
 });
+

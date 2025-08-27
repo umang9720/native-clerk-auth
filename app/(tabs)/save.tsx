@@ -10,9 +10,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { getAuthToken } from "@/utils/authToken";
 import { base_url } from "@/config/url";
+import { useFocusEffect } from "@react-navigation/native";
 
 // ✅ Define goal type
 type Goal = {
@@ -26,28 +27,35 @@ export default function SmartSavings() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
-const fetchGoals = useCallback(async () => {
-  try {
-    const token = await getAuthToken("user");
-    const response = await fetch(`${base_url}/goals/user`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+  const fetchGoals = useCallback(async () => {
+    try {
+      const token = await getAuthToken("user");
+      const response = await fetch(`${base_url}/goals/user`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    const result = await response.json();
-    const goalsData: Goal[] = result?.data?.data || [];
-    setGoals(goalsData);
-  } catch (error) {
-    console.error("Error fetching goals:", error);
-  }
-}, []); // Empty deps if you don’t rely on other state/props
+      const result = await response.json();
+      const goalsData: Goal[] = result?.data?.data || [];
+      setGoals(goalsData);
+      // Auto-select latest goal (optional)
+      // if (goalsData.length > 0) {
+      //   setSelectedGoalId(goalsData[goalsData.length - 1].id);
+      // }
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+    }
+  }, []); // Empty deps if you don’t rely on other state/props
 
-useEffect(() => {
-  fetchGoals();
-}, [fetchGoals]); // Called once on mount
+  useFocusEffect(
+    useCallback(() => {
+      fetchGoals();
+    }, [fetchGoals])
+  );
+  // Called once on mount
 
   const handleSave = async (label: string, desc: string, value: number) => {
     if (!selectedGoalId) {
@@ -76,7 +84,7 @@ useEffect(() => {
         body: JSON.stringify({
           goalId,
           title: label,
-          type:"sacrifice",
+          type: "sacrifice",
           description: desc,
           amount: value,
         }),

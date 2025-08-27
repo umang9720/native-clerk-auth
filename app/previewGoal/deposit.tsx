@@ -30,7 +30,7 @@ const DepositScreen = () => {
 
   const { id } = useLocalSearchParams();
 
-  // console.log("Goal ID:", id); // this will log the passed ID
+  console.log("Goal ID:", id); // this will log the passed ID
 
   // console.log("Selected goal:", selectedGoal);
   // console.log("Selected goal ID:", selectedGoalId);
@@ -57,7 +57,7 @@ const DepositScreen = () => {
       const json = await res.json();
 
       if (res.ok) {
-        // console.log("Deposit success", json);
+        console.log("Deposit success", json);
         // Show toast or navigate back
         Toast.show({
           type: "success",
@@ -71,7 +71,7 @@ const DepositScreen = () => {
           }, 1200);
         });
       } else {
-        // console.warn("Deposit failed:", json?.message || "Unknown error");
+        console.warn("Deposit failed:", json?.message || "Unknown error");
         Toast.show({
           type: "error",
           text1: "Unsuccessfully Deposited",
@@ -111,7 +111,7 @@ const DepositScreen = () => {
       const json = await res.json();
 
       if (res.ok) {
-        // console.log("Withdraw success", json);
+        console.log("Withdraw success", json);
         Toast.show({
           type: "success",
           text1: "Successfully Withdrawn",
@@ -124,7 +124,7 @@ const DepositScreen = () => {
           }, 1200);
         });
       } else {
-        // console.warn("Withdraw failed:", json?.message || "Unknown error");
+        console.warn("Withdraw failed:", json?.message || "Unknown error");
         Toast.show({
           type: "error",
           text1: "Unsuccessfully Withdrawn",

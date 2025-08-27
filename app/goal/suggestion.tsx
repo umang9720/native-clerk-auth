@@ -26,7 +26,7 @@ const [goals, setGoals] = useState<any[]>([]);
         setLoading(true);
         const token = await getAuthToken("user");
         if (!token) {
-          // console.warn("User not found in storage");
+          console.warn("User not found in storage");
           setLoading(false);
           return;
         }
@@ -40,17 +40,17 @@ const [goals, setGoals] = useState<any[]>([]);
         });
 
         const data = await response.json();
-        // console.log("Parsed response data:", data);
+        console.log("Parsed response data:", data);
 
         const suggestions = data?.data?.data;
         if (response.ok && Array.isArray(suggestions)) {
         setGoals([...suggestions].reverse()); 
         } else {
-          // console.log("No valid suggestions data");
+          console.log("No valid suggestions data");
           setGoals([]);
         }
       } catch (error: any) {
-        // console.error("Error fetching goal suggestions:", error.message);
+        console.error("Error fetching goal suggestions:", error.message);
         setGoals([]);
       } finally {
         setLoading(false);

@@ -5,6 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  Modal,
+  Button,
+  InteractionManager,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,7 +18,8 @@ import { base_url } from "@/config/url";
 import { getAuthToken } from "@/utils/authToken";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 interface GoalTransaction {
   id: string;
@@ -56,6 +60,8 @@ const groupTransactionsByDate = (transactions: GoalTransaction[]) => {
 };
 
 const PreviewGoal = () => {
+  const insets = useSafeAreaInsets();
+
   const { goal } = useLocalSearchParams();
   //goal data fetched from active goal list
   const selectedGoal = goal ? JSON.parse(goal as string) : null;
@@ -69,41 +75,135 @@ const PreviewGoal = () => {
   const imageKey = selectedGoal?.goalImage as keyof typeof goalImageMap;
   const emoji = goalImageMap[imageKey] || "🎯";
   const [transactions, setTransactions] = useState<GoalTransaction[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
-useFocusEffect(
-  useCallback(() => {
-    const fetchGoalTransactions = async () => {
-      const goalId = selectedGoal?.id;
-      if (!goalId) return;
+  useFocusEffect(
+    useCallback(() => {
+      const fetchGoalTransactions = async () => {
+        const goalId = selectedGoal?.id;
+        if (!goalId) return;
 
-      const token = await getAuthToken("user");
-      const response = await fetch(`${base_url}/money/all`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ goalId }),
-      });
+        const token = await getAuthToken("user");
+        const response = await fetch(`${base_url}/money/all`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ goalId }),
+        });
 
-      const data = await response.json();
-      setTransactions(data.data.data || []);
-    };
+        const data = await response.json();
+        setTransactions(data.data.data || []);
+      };
 
-    fetchGoalTransactions();
-  }, [selectedGoal?.id])
-);
+      fetchGoalTransactions();
+    }, [selectedGoal?.id])
+  );
 
+  //delete goal
+const deleteGoal = async () => {
+  const goalId = selectedGoal?.id;
+  if (!goalId) return;
+
+  try {
+    const token = await getAuthToken("user");
+    const url = `${base_url}/goal/delete`;
+
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ goalId }),
+    });
+
+    const contentType = response.headers.get("content-type");
+    const data = contentType?.includes("application/json")
+      ? await response.json()
+      : null;
+
+    if (response.status == 201 && data?.success) {
+      Toast.show({
+    type: "success",
+    text1: "Successfully deleted the goal",
+    visibilityTime: 1000,
+  });
+
+  setTimeout(() => {
+    router.replace("/(tabs)"); // Prevents going back to deleted goal
+  }, 1000); // Slightly longer to let toast display
+    } else {
+      console.warn(
+        "Delete failed:",
+        data?.data?.message || data?.message || `Unexpected status: ${response.status}`
+      );
+    }
+  } catch (error) {
+    console.error("Error deleting goal:", error);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="close" size={28} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Goal Preview</Text>
+        </View>
+
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <Ionicons name="ellipsis-vertical-sharp" size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>Goal Preview</Text>
       </View>
 
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalView}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalAlertCircle}>
+              <Ionicons name="alert-circle" size={28} color={"#3BA365"} />
+            </View>
+            <Text style={{ fontSize: 16, fontWeight: "500" }}>
+              You are going to delete your Goal.
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "700",
+                color: "rgba(99, 117, 135, 1)",
+              }}
+            >
+              You won't be able to restore your data
+            </Text>
+          </View>
+          <View style={styles.modalButtonContainer}>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.modalCancelBtn}
+            >
+              <Text style={styles.modalBtnText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                deleteGoal();
+                setModalVisible(false);
+              }}
+              style={styles.modalDeleteBtn}
+            >
+              <Text style={styles.modalBtnText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {selectedGoal ? (
         <>
           <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -124,15 +224,16 @@ useFocusEffect(
                     style={[
                       styles.progressBar,
                       {
-                        width: `${selectedGoal.goalAmount
+                        width: `${
+                          selectedGoal.goalAmount
                             ? Math.min(
-                              ((selectedGoal.savedAmount ?? 0) /
-                                selectedGoal.goalAmount) *
-                              100,
-                              100
-                            )
+                                ((selectedGoal.savedAmount ?? 0) /
+                                  selectedGoal.goalAmount) *
+                                  100,
+                                100
+                              )
                             : 0
-                          }%`,
+                        }%`,
                       },
                     ]}
                   />
@@ -192,18 +293,21 @@ useFocusEffect(
           </ScrollView>
 
           {/* Fixed bottom actions */}
-          <View style={styles.fixedActions}>
+          <View
+            style={[styles.fixedActions, { paddingBottom: insets.bottom + 16 }]}
+          >
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.outlinedBtn}>
                 <Text>Complete Goal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.outlinedBtn}
-                onPress={() => router.push({
-                  pathname: "/previewGoal/deposit",
-                  params: { id: selectedGoal.id }
-                })}
-
+                onPress={() =>
+                  router.push({
+                    pathname: "/previewGoal/deposit",
+                    params: { id: selectedGoal.id },
+                  })
+                }
               >
                 <Text>Deposit</Text>
               </TouchableOpacity>
@@ -236,6 +340,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+
   scrollContent: {
     paddingBottom: 180, // enough space so scroll doesn't hide behind fixed buttons
   },
@@ -252,19 +357,25 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 15,
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   title: {
     fontSize: 18,
     fontWeight: "600",
     color: "#121417",
   },
+
   goalDetails: {
     padding: 20,
   },
@@ -381,4 +492,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   greenBtnText: { color: "white", fontWeight: "bold" },
+  modalView: {
+    width: width * 0.9,
+    maxWidth: 400,
+    alignSelf: "center",
+    top: "30%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(227, 224, 197, 1)",
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  modalAlertCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#CDFFDF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: "#202020",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalDeleteBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: "#3BA365",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%", // or "100%" if you want full width
+    alignSelf: "center",
+    gap: 10, // optional spacing between buttons (React Native 0.71+)
+  },
+
+  modalHeader: {
+    width: 270,
+    height: 100,
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    marginBottom: 20,
+  },
+  modalBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 40,
+  },
 });

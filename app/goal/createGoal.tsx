@@ -80,53 +80,55 @@ const CreateGoal = () => {
     return `${dayStr}-${monthStr}-${year}`;
   };
 
- const handleCreateGoal = async () => {
-  // Close calendar if it's still open
-  if (customCalendarVisible) {
-    setCustomCalendarVisible(false);
-  }
+  const handleCreateGoal = async () => {
+    // Close calendar if it's still open
+    if (customCalendarVisible) {
+      setCustomCalendarVisible(false);
+    }
 
-  if (!goalName || !goalAmount || !durationInDate || !selectedType) {
-    Alert.alert("Error", "Please fill in all fields");
-    return;
-  }
+    if (!goalName || !goalAmount || !durationInDate || !selectedType) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
 
-  const selectedGoal = goalTypes.find((g) => g.type === selectedType);
-  const goalImage = selectedGoal?.image || "default.jpg";
-  const token = await getAuthToken("user");
+    const selectedGoal = goalTypes.find((g) => g.type === selectedType);
+    const goalImage = selectedGoal?.image || "default.jpg";
+    const token = await getAuthToken("user");
 
-  const response = await fetch(`${base_url}/create/goal`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      goalImage,
-      goalName,
-      goalAmount: parseFloat(goalAmount),
-      durationInDate: getFutureDate(durationInDate),
-      reward: {
-        name: "Laptop Bag",
-        description: "Get a stylish laptop bag on goal completion.",
-        imageUrl: "laptop-bag.jpg",
+    const response = await fetch(`${base_url}/create/goal`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        goalImage,
+        goalName,
+        goalAmount: parseFloat(goalAmount),
+        durationInDate: getFutureDate(durationInDate),
+        reward: {
+          name: "Laptop Bag",
+          description: "Get a stylish laptop bag on goal completion.",
+          imageUrl: "laptop-bag.jpg",
+        },
+      }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (response.status === 201 && data?.data?.id) {
-    setShowSuccessModal(true);
-    setTimeout(() => {
-      setShowSuccessModal(false);
-      router.push({ pathname: "/goal/SavingMethod", params: { goalId: data.data.id } });
-    }, 3000);
-  } else {
-    Alert.alert("Error", "Failed to create goal");
-  }
-};
-
+    if (response.status === 201 && data?.data?.id) {
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        router.push({
+          pathname: "/goal/SavingMethod",
+          params: { goalId: data.data.id },
+        });
+      }, 3000);
+    } else {
+      Alert.alert("Error", "Failed to create goal");
+    }
+  };
 
   const calculateDaysBetween = (start: Date, end: Date): number => {
     const timeDiff = end.getTime() - start.getTime();
@@ -134,36 +136,40 @@ const CreateGoal = () => {
   };
 
   const getMarkedDates = (start: Date | null, end: Date | null) => {
-  if (!start) return {};
+    if (!start) return {};
 
-  const marked: any = {};
-  const startStr = moment(start).format('YYYY-MM-DD');
+    const marked: any = {};
+    const startStr = moment(start).format("YYYY-MM-DD");
 
-  if (!end) {
-    marked[startStr] = { startingDay: true, endingDay: true, color: '#10B981', textColor: '#fff' };
+    if (!end) {
+      marked[startStr] = {
+        startingDay: true,
+        endingDay: true,
+        color: "#10B981",
+        textColor: "#fff",
+      };
+      return marked;
+    }
+
+    const endStr = moment(end).format("YYYY-MM-DD");
+    let curr = moment(start);
+
+    while (curr.isSameOrBefore(end, "day")) {
+      const currStr = curr.format("YYYY-MM-DD");
+      marked[currStr] = {
+        color: "#A7F3D0",
+        textColor: "#065F46",
+      };
+      curr = curr.add(1, "day");
+    }
+
+    marked[startStr].startingDay = true;
+    marked[endStr].endingDay = true;
+    marked[startStr].color = marked[endStr].color = "#10B981";
+    marked[startStr].textColor = marked[endStr].textColor = "#fff";
+
     return marked;
-  }
-
-  const endStr = moment(end).format('YYYY-MM-DD');
-  let curr = moment(start);
-
-  while (curr.isSameOrBefore(end, 'day')) {
-    const currStr = curr.format('YYYY-MM-DD');
-    marked[currStr] = {
-      color: '#A7F3D0',
-      textColor: '#065F46',
-    };
-    curr = curr.add(1, 'day');
-  }
-
-  marked[startStr].startingDay = true;
-  marked[endStr].endingDay = true;
-  marked[startStr].color = marked[endStr].color = '#10B981';
-  marked[startStr].textColor = marked[endStr].textColor = '#fff';
-
-  return marked;
-};
-
+  };
 
   {
     showPicker && (
@@ -224,23 +230,30 @@ const CreateGoal = () => {
         </ScrollView>
 
         <View style={styles.inputContainer}>
-          <Text style={{ marginRight: "70%" }}>Goal Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Europe Trip"
-            value={goalName}
-            onChangeText={setGoalName}
-          />
-          <Text style={{ marginRight: "60%", marginTop: 10 }}>
-            Goal Amount (£)
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 200"
-            value={goalAmount}
-            onChangeText={setGoalAmount}
-            keyboardType="numeric"
-          />
+          <View style={{ width: "100%", marginTop: 10 }}>
+            <Text style={{ marginBottom: 5, fontWeight: "600" }}>
+              Goal Name
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Europe Trip"
+              value={goalName}
+              onChangeText={setGoalName}
+            />
+          </View>
+
+          <View style={{ width: "100%", marginTop: 10 }}>
+            <Text style={{ marginBottom: 5, fontWeight: "600" }}>
+              Goal Amount
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 200"
+              value={goalAmount}
+              onChangeText={setGoalAmount}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Duration</Text>
@@ -268,36 +281,35 @@ const CreateGoal = () => {
               </Text>
             </TouchableOpacity>
           ))}
-
-          {/* 👉 Custom Date Button */}
-          <TouchableOpacity
+        </View>
+        {/* 👉 Custom Date Button */}
+        <TouchableOpacity
+          style={[
+            styles.durationButton,
+            startDate &&
+              endDate &&
+              durationInDate ===
+                calculateDaysBetween(startDate, endDate).toString() &&
+              styles.durationButtonSelected,
+          ]}
+          onPress={() => {
+            setCalendarMode("start");
+            setCustomCalendarVisible(true);
+          }}
+        >
+          <Text
             style={[
-              styles.durationButton,
+              styles.durationText,
               startDate &&
                 endDate &&
                 durationInDate ===
                   calculateDaysBetween(startDate, endDate).toString() &&
-                styles.durationButtonSelected,
+                styles.durationTextSelected,
             ]}
-            onPress={() => {
-              setCalendarMode("start");
-              setCustomCalendarVisible(true);
-            }}
           >
-            <Text
-              style={[
-                styles.durationText,
-                startDate &&
-                  endDate &&
-                  durationInDate ===
-                    calculateDaysBetween(startDate, endDate).toString() &&
-                  styles.durationTextSelected,
-              ]}
-            >
-              Custom
-            </Text>
-          </TouchableOpacity>
-        </View>
+            Custom
+          </Text>
+        </TouchableOpacity>
 
         {goalAmount && durationInDate && (
           <View style={styles.greenBox}>
@@ -320,99 +332,102 @@ const CreateGoal = () => {
         </TouchableOpacity>
       </ScrollView>
 
-     {showPicker && (
-  <DateTimePicker
-    value={new Date()}
-    mode="date"
-    display="default"
-    onChange={(event, selectedDate) => {
-      if (selectedDate) {
-        if (isPickingStart) {
-          setStartDate(selectedDate);
-          setIsPickingStart(false);
-          setShowPicker(true); // Show end picker next
-        } else {
-          setEndDate(selectedDate);
-          if (startDate) {
-            const days = calculateDaysBetween(startDate, selectedDate);
-            setDurationInDate(days.toString());
-          }
-          setIsPickingStart(true);
-          setShowPicker(false);
-        }
-      } else {
-        // User cancelled picker
-        setShowPicker(false);
-        setIsPickingStart(true);
-      }
-    }}
-  />
-)}
+      {showPicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            if (selectedDate) {
+              if (isPickingStart) {
+                setStartDate(selectedDate);
+                setIsPickingStart(false);
+                setShowPicker(true); // Show end picker next
+              } else {
+                setEndDate(selectedDate);
+                if (startDate) {
+                  const days = calculateDaysBetween(startDate, selectedDate);
+                  setDurationInDate(days.toString());
+                }
+                setIsPickingStart(true);
+                setShowPicker(false);
+              }
+            } else {
+              // User cancelled picker
+              setShowPicker(false);
+              setIsPickingStart(true);
+            }
+          }}
+        />
+      )}
 
-{showSuccessModal && (
-  <View style={styles.successOverlay}>
-    <View style={styles.successPopup}>
-      <Ionicons name="checkmark-circle" size={64} color="#10B981" />
-      <Text style={styles.successTitle}>You did it!</Text>
-      <Text style={styles.successSubtitle}>You&apos;ve created your goal.</Text>
-      <Text style={{ marginTop: 10 }}>Redirecting in 3 sec...</Text>
-    </View>
-  </View>
-)}
+      {showSuccessModal && (
+        <View style={styles.successOverlay}>
+          <View style={styles.successPopup}>
+            <Ionicons name="checkmark-circle" size={64} color="#10B981" />
+            <Text style={styles.successTitle}>You did it!</Text>
+            <Text style={styles.successSubtitle}>
+              You&apos;ve created your goal.
+            </Text>
+            <Text style={{ marginTop: 10 }}>Redirecting in 3 sec...</Text>
+          </View>
+        </View>
+      )}
 
+      {customCalendarVisible && (
+        <View style={styles.calendarOverlay}>
+          <View style={styles.calendarContainer}>
+            <Text style={styles.calendarTitle}>
+              {calendarMode === "start"
+                ? "Choose Start Date"
+                : "Choose End Date"}
+            </Text>
 
- {customCalendarVisible && (
-  <View style={styles.calendarOverlay}>
-    <View style={styles.calendarContainer}>
-      <Text style={styles.calendarTitle}>
-        {calendarMode === "start" ? "Choose Start Date" : "Choose End Date"}
-      </Text>
+            <Calendar
+              current={new Date().toISOString().split("T")[0]}
+              minDate={new Date().toISOString().split("T")[0]} // 🔒 Prevent selecting past dates
+              onDayPress={(day) => {
+                const selected = new Date(day.dateString);
 
-      <Calendar
-        current={new Date().toISOString().split("T")[0]}
-        onDayPress={(day) => {
-          const selected = new Date(day.dateString);
+                if (calendarMode === "start") {
+                  setStartDate(selected);
+                  setCalendarMode("end");
+                } else {
+                  setEndDate(selected);
+                  const diff = calculateDaysBetween(startDate!, selected);
+                  setDurationInDate(diff.toString());
+                  setCustomCalendarVisible(false);
+                  setCalendarMode("start");
+                }
+              }}
+              markingType={"period"}
+              markedDates={getMarkedDates(startDate, endDate)}
+              theme={{
+                backgroundColor: "#ffffff",
+                calendarBackground: "#ffffff",
+                textSectionTitleColor: "#b6c1cd",
+                selectedDayBackgroundColor: "#10B981",
+                selectedDayTextColor: "#ffffff",
+                todayTextColor: "#10B981",
+                dayTextColor: "#2d4150",
+                textDisabledColor: "#d9e1e8",
+                dotColor: "#10B981",
+                arrowColor: "#10B981",
+              }}
+            />
 
-          if (calendarMode === "start") {
-            setStartDate(selected);
-            setCalendarMode("end");
-          } else {
-            setEndDate(selected);
-            const diff = calculateDaysBetween(startDate!, selected);
-            setDurationInDate(diff.toString());
-            setCustomCalendarVisible(false);
-            setCalendarMode("start");
-          }
-        }}
-        markingType={'period'}
-        markedDates={getMarkedDates(startDate, endDate)}
-        theme={{
-          backgroundColor: '#ffffff',
-          calendarBackground: '#ffffff',
-          textSectionTitleColor: '#b6c1cd',
-          selectedDayBackgroundColor: '#10B981',
-          selectedDayTextColor: '#ffffff',
-          todayTextColor: '#10B981',
-          dayTextColor: '#2d4150',
-          textDisabledColor: '#d9e1e8',
-          dotColor: '#10B981',
-          arrowColor: '#10B981',
-        }}
-      />
-
-      <TouchableOpacity
-        onPress={() => {
-          setCustomCalendarVisible(false);
-          setCalendarMode("start");
-        }}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: "red", fontWeight: "600" }}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
-
+            <TouchableOpacity
+              onPress={() => {
+                setCustomCalendarVisible(false);
+                setCalendarMode("start");
+              }}
+              style={{ marginTop: 20 }}
+            >
+              <Text style={{ color: "red", fontWeight: "600" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -475,21 +490,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   inputContainer: {
-    width: 340,
-    height: 200,
+    width: "100%",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     marginTop: 20,
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "center", // ✅ Center on screen
+    marginBottom: 20,
   },
+
   input: {
     backgroundColor: "#FFEAE9",
     borderRadius: 10,
-    width: width * 0.8,
+    width: "100%", // Full width of container
     padding: 12,
     marginTop: 15,
   },
+
   durationContainer: {
     marginTop: 20,
   },
@@ -499,17 +519,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   durationButtons: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    justifyContent: "space-around",
-  },
-  durationButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: "#E5E7EB",
-  },
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-evenly", // space between buttons
+  rowGap: 12, // gap between rows
+  columnGap: 10, // horizontal gap
+  marginBottom: 10,
+
+},
+
+durationButton: {
+  flexBasis: "30%", // Takes ~30% of row width (3 buttons per row)
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  borderRadius: 8,
+  backgroundColor: "#E5E7EB",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 10,
+},
+
   durationButtonSelected: {
     backgroundColor: "#083623",
   },
@@ -593,46 +622,45 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: "center",
   },
- successOverlay: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 3000, // Ensure it's above calendar
-},
+  successOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 3000, // Ensure it's above calendar
+  },
 
-calendarOverlay: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.6)",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 2000, // Lower than successOverlay
-},
+  calendarOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2000, // Lower than successOverlay
+  },
 
-calendarContainer: {
-  backgroundColor: "#fff",
-  padding: 20,
-  borderRadius: 12,
-  width: "90%",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 4,
-  elevation: 5,
-},
-calendarTitle: {
-  fontSize: 18,
-  fontWeight: "bold",
-  marginBottom: 10,
-  textAlign: "center",
-},
-
+  calendarContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    width: "90%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
 });
